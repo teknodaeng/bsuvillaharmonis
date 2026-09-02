@@ -118,7 +118,14 @@ export const RegistrationPage = () => {
         password: data.password,
       };
       const res = await authService.register(payload);
-      setRegisteredNasabah(res.data.nasabah);
+      const regNasabah = res?.data?.nasabah || res?.nasabah || res?.data;
+      if (!regNasabah) {
+        throw new Error(
+          res?.message ||
+            "Respon pendaftaran tidak valid. Pastikan variabel VITE_API_BASE_URL mengarah ke backend API yang aktif."
+        );
+      }
+      setRegisteredNasabah(regNasabah);
     } catch (err) {
       setErrorMessage(err.message || "Pendaftaran gagal. Silakan periksa kembali data Anda.");
     } finally {

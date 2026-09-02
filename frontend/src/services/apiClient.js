@@ -24,7 +24,23 @@ apiClient.interceptors.request.use(
 
 // Response Interceptor
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Detect if server returned an HTML fallback page instead of JSON API response
+    const contentType = response.headers?.["content-type"] || "";
+    if (
+      typeof response.data === "string" &&
+      (contentType.includes("text/html") ||
+        response.data.trim().startsWith("<!DOCTYPE") ||
+        response.data.trim().startsWith("<html"))
+    ) {
+      return Promise.reject(
+        new Error(
+          "Endpoint API tidak ditemukan (server mengembalikan halaman HTML). Pastikan variabel VITE_API_BASE_URL telah diisi dengan URL backend API publik yang benar di pengaturan EdgeOne Makers."
+        )
+      );
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     
