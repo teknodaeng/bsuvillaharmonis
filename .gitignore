@@ -1,0 +1,137 @@
+# ==========================================
+# BSU Villa Harmonis - .gitignore
+# ==========================================
+
+# ------------------------------------------
+# 1. Environment Variables & Secrets
+# ------------------------------------------
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+backend/.env
+frontend/.env
+frontend/.env.local
+*.env
+# Jangan abaikan file template contoh
+!*.env.example
+
+# ------------------------------------------
+# 2. Database & Local Storage
+# ------------------------------------------
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+backend/bsuvh.db
+backend/*.db
+
+# ------------------------------------------
+# 3. Python & Backend
+# ------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+backend/venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# ------------------------------------------
+# 4. Node.js & Frontend (Vite / React)
+# ------------------------------------------
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------
+# 5. Testing & Coverage
+# ------------------------------------------
+.pytest_cache/
+backend/.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+
+# ------------------------------------------
+# 6. IDE, Editors & OS Specific Files
+# ------------------------------------------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+
+# Linux / Vim / Backup
+*~
+*.swp
+*.swo
+*.tmp
+
+# VS Code & JetBrains IDEs
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ------------------------------------------
+# 7. General Logs & Scratch
+# ------------------------------------------
+*.log
+logs/
+scratch/
+Design.md
+prd.md
+UAT.md
