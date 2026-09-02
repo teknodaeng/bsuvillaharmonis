@@ -135,3 +135,6 @@ scratch/
 Design.md
 prd.md
 UAT.md
+
+backend/bsuvh.db-shm
+backend/bsuvh.db-wal
