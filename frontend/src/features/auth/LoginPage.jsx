@@ -43,7 +43,18 @@ export const LoginPage = () => {
     setErrorMessage("");
     try {
       const res = await authService.login(data);
-      const { user, access_token, refresh_token } = res.data;
+      const authData = res?.data || res;
+      const user = authData?.user;
+      const access_token = authData?.access_token;
+      const refresh_token = authData?.refresh_token;
+
+      if (!user || !access_token) {
+        throw new Error(
+          res?.message ||
+            "Respon autentikasi tidak valid. Pastikan variabel VITE_API_BASE_URL mengarah ke backend API yang aktif."
+        );
+      }
+
       setAuth({ user, access_token, refresh_token });
 
       addToast({
