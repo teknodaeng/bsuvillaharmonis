@@ -7,16 +7,18 @@ interface RateLimitRecord {
 }
 
 const rateLimitStore = new Map<string, RateLimitRecord>();
+let lastCleanup = 0;
+const CLEANUP_INTERVAL_MS = 60 * 1000;
 
-// Clean up expired entries every 5 minutes to prevent memory leak
-setInterval(() => {
-  const now = Date.now();
+function cleanupExpiredEntries(now: number) {
+  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
+  lastCleanup = now;
   for (const [key, record] of rateLimitStore.entries()) {
     if (now > record.resetTime) {
       rateLimitStore.delete(key);
     }
   }
-}, 5 * 60 * 1000).unref?.();
+}
 
 export interface RateLimitOptions {
   windowMs: number;
@@ -43,6 +45,7 @@ export function rateLimiter(options: RateLimitOptions) {
     const path = c.req.path;
     const clientKey = options.keyGenerator ? options.keyGenerator(c) : `${ip}:${path}`;
     const now = Date.now();
+    cleanupExpiredEntries(now);
 
     let record = rateLimitStore.get(clientKey);
 
