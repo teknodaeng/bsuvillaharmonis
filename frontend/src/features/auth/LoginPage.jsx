@@ -1,14 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { LogIn, User, ShieldAlert } from "lucide-react";
+import clsx from "clsx";
+import { LogIn, User } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { PasswordInput } from "../../components/ui/PasswordInput";
 import { Card } from "../../components/ui/Card";
 import { Alert } from "../../components/ui/Alert";
+import { ProgressBar } from "../../components/ui/ProgressBar";
 import { authService } from "../../services/authService";
 import { useAuthStore } from "../../stores/authStore";
 import { useUIStore } from "../../stores/uiStore";
@@ -25,6 +27,23 @@ export const LoginPage = () => {
   const { addToast } = useUIStore();
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [pageProgress, setPageProgress] = useState(20);
+
+  useEffect(() => {
+    // Progress bar animation saat memuat halaman login
+    const step1 = setTimeout(() => setPageProgress(55), 100);
+    const step2 = setTimeout(() => setPageProgress(88), 240);
+    const step3 = setTimeout(() => setPageProgress(100), 420);
+    const finish = setTimeout(() => setIsPageLoading(false), 700);
+
+    return () => {
+      clearTimeout(step1);
+      clearTimeout(step2);
+      clearTimeout(step3);
+      clearTimeout(finish);
+    };
+  }, []);
 
   const {
     register,
@@ -75,13 +94,43 @@ export const LoginPage = () => {
   };
 
   return (
-    <Card className="shadow-xl border-gray-100/80">
-      <div className="text-center mb-6">
-        <h2 className="text-lg font-bold text-gray-900">Masuk ke Akun Anda</h2>
-        <p className="text-xs text-gray-500 mt-1">
-          Gunakan ID Nasabah, No. Rekening, NIK, atau Username Admin
-        </p>
-      </div>
+    <>
+      {/* Top of Viewport Loading Bar */}
+      {(isPageLoading || isLoading) && (
+        <ProgressBar
+          fixedTop
+          indeterminate={isLoading}
+          progress={isLoading ? 85 : pageProgress}
+          className={clsx(
+            "transition-opacity duration-300",
+            !isLoading && pageProgress === 100 && "opacity-0"
+          )}
+        />
+      )}
+
+      <Card className="relative overflow-hidden shadow-xl border-gray-100/80">
+        {/* Card Header Top Progress Indicator */}
+        {(isPageLoading || isLoading) && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-100/40 overflow-hidden z-20">
+            <div
+              className={clsx(
+                "h-full bg-gradient-to-r from-emerald-500 via-primary-500 to-teal-400 transition-all duration-300 ease-out",
+                isLoading && "animate-progress-indeterminate w-full"
+              )}
+              style={{
+                width: isLoading ? undefined : `${pageProgress}%`,
+                boxShadow: "0 0 10px rgba(16, 185, 129, 0.7)",
+              }}
+            />
+          </div>
+        )}
+
+        <div className="text-center mb-6">
+          <h2 className="text-lg font-bold text-gray-900">Masuk ke Akun Anda</h2>
+          <p className="text-xs text-gray-500 mt-1">
+            Gunakan ID Nasabah, No. Rekening, NIK, atau Username Admin
+          </p>
+        </div>
 
       {errorMessage && (
         <Alert type="danger" className="mb-4">
@@ -133,5 +182,6 @@ export const LoginPage = () => {
         </p>
       </div>
     </Card>
+    </>
   );
 };
