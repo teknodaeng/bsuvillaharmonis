@@ -56,7 +56,7 @@ export class PriceService {
        FROM waste_price_masters p
        JOIN waste_categories c ON p.category_id = c.id
        WHERE ${whereClause}
-       ORDER BY CASE WHEN UPPER(p.status) = 'ACTIVE' THEN 1 ELSE 2 END ASC, p.effective_date DESC, p.created_at DESC
+       ORDER BY CASE WHEN UPPER(p.status) = 'ACTIVE' THEN 1 ELSE 2 END ASC, c.name ASC, p.price_code ASC, p.group_name ASC
        LIMIT ? OFFSET ?`,
       [...args, pageSize, offset]
     );
@@ -102,6 +102,22 @@ export class PriceService {
     return price;
   }
 
+  public static async getPriceHistories(priceId: string) {
+    await this.getPriceById(priceId);
+
+    const rows = await db.fetchAll<any>(
+      `SELECT h.*, c.name as category_name, u.name as creator_name
+       FROM waste_price_histories h
+       LEFT JOIN waste_categories c ON h.category_id = c.id
+       LEFT JOIN users u ON h.created_by = u.id
+       WHERE h.price_id = ?
+       ORDER BY h.created_at DESC, h.rowid DESC`,
+      [priceId]
+    );
+
+    return rows;
+  }
+
   public static async createPrice(data: PriceCreateInput, creatorId?: string) {
     const category = await db.fetchOne<any>(
       'SELECT * FROM waste_categories WHERE id = ?',
@@ -117,21 +133,13 @@ export class PriceService {
     const priceId = uuidv4();
     const effectiveDate = data.effective_date || new Date().toISOString().slice(0, 10);
     const statusVal = data.status || 'ACTIVE';
+    const unitVal = data.unit || 'kg';
 
-    return await db.transaction(async (tx) => {
-      // Auto-deactivate previous active prices for same category if new price is ACTIVE
-      if (statusVal === 'ACTIVE') {
-        await tx.execute({
-          sql: `UPDATE waste_price_masters SET status = 'INACTIVE', updated_at = datetime('now')
-                WHERE category_id = ? AND status = 'ACTIVE'`,
-          args: [data.category_id],
-        });
-      }
-
+    await db.transaction(async (tx) => {
       await tx.execute({
         sql: `INSERT INTO waste_price_masters (
           id, category_id, price_per_kg, price_code, group_name, example_items, unit, effective_date, status, notes, created_by, updated_by
-        ) VALUES (?, ?, ?, ?, ?, ?, 'kg', ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           priceId,
           data.category_id,
@@ -139,6 +147,7 @@ export class PriceService {
           data.price_code || null,
           data.group_name || null,
           data.example_items || null,
+          unitVal,
           effectiveDate,
           statusVal,
           data.notes || null,
@@ -163,9 +172,9 @@ export class PriceService {
           creatorId || 'ADMIN',
         ],
       });
-
-      return await this.getPriceById(priceId);
     });
+
+    return await this.getPriceById(priceId);
   }
 
   public static async updatePrice(id: string, data: PriceUpdateInput, updaterId?: string) {
@@ -183,23 +192,15 @@ export class PriceService {
     const priceCode = data.price_code !== undefined ? data.price_code : existing.price_code;
     const groupName = data.group_name !== undefined ? data.group_name : existing.group_name;
     const exampleItems = data.example_items !== undefined ? data.example_items : existing.example_items;
+    const unitVal = data.unit !== undefined ? data.unit : existing.unit || 'kg';
     const effectiveDate = data.effective_date !== undefined ? data.effective_date : existing.effective_date;
     const statusVal = data.status !== undefined ? data.status : existing.status;
     const notes = data.notes !== undefined ? data.notes : existing.notes;
 
-    return await db.transaction(async (tx) => {
-      // Auto-deactivate previous active price for same category if changed to ACTIVE
-      if (statusVal === 'ACTIVE') {
-        await tx.execute({
-          sql: `UPDATE waste_price_masters SET status = 'INACTIVE', updated_at = datetime('now')
-                WHERE category_id = ? AND id != ? AND status = 'ACTIVE'`,
-          args: [categoryId, id],
-        });
-      }
-
+    await db.transaction(async (tx) => {
       await tx.execute({
         sql: `UPDATE waste_price_masters
-              SET category_id = ?, price_per_kg = ?, price_code = ?, group_name = ?, example_items = ?, effective_date = ?, status = ?, notes = ?, updated_by = ?, updated_at = datetime('now')
+              SET category_id = ?, price_per_kg = ?, price_code = ?, group_name = ?, example_items = ?, unit = ?, effective_date = ?, status = ?, notes = ?, updated_by = ?, updated_at = datetime('now')
               WHERE id = ?`,
         args: [
           categoryId,
@@ -207,6 +208,7 @@ export class PriceService {
           priceCode,
           groupName,
           exampleItems,
+          unitVal,
           effectiveDate,
           statusVal,
           notes,
@@ -231,9 +233,9 @@ export class PriceService {
           updaterId || 'ADMIN',
         ],
       });
-
-      return await this.getPriceById(id);
     });
+
+    return await this.getPriceById(id);
   }
 
   public static async updatePriceStatus(id: string, statusVal: 'ACTIVE' | 'INACTIVE', updaterId?: string) {
