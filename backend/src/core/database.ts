@@ -1,4 +1,4 @@
-import { createClient, Client, InStatement, Transaction } from '@libsql/client';
+import { createClient, Client } from '@libsql/client';
 import { config } from './config.js';
 import path from 'path';
 
