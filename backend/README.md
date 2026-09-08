@@ -1,15 +1,15 @@
 # BSU Villa Harmonis - Backend API
 
-REST API backend untuk sistem **Tabungan Bank Sampah BSU Villa Harmonis** menggunakan **Python + FastAPI** dan **Turso Database**.
+REST API backend untuk sistem **Tabungan Bank Sampah BSU Villa Harmonis** menggunakan **Hono Web Application Framework (TypeScript)**, **Node.js**, dan **Turso / SQLite Database**.
 
 ---
 
 ## 🚀 Cara Menjalankan
 
-### 1. Masuk ke direktori backend dan aktifkan virtualenv
+### 1. Masuk ke direktori backend dan instal dependensi
 ```bash
 cd backend
-source venv/bin/activate
+npm install
 ```
 
 ### 2. Konfigurasi Environment (`.env`)
@@ -23,16 +23,19 @@ Untuk menghubungkan ke **Turso Cloud Database**, isi:
 DATABASE_URL=libsql://your-turso-database-name.turso.io
 TURSO_AUTH_TOKEN=your-turso-auth-token
 ```
-*Catatan: Jika `DATABASE_URL` dikosongkan, backend secara otomatis menggunakan SQLite lokal (`bsuvh.db`).*
+*Catatan: Jika `DATABASE_URL` dikosongkan atau menggunakan `file:bsuvh.db`, backend secara otomatis menggunakan SQLite lokal (`bsuvh.db`).*
 
 ### 3. Menjalankan Server Development
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+npm run dev
 ```
+Server backend akan berjalan di [http://localhost:8000](http://localhost:8000) dengan hot reload via `tsx watch`.
 
-Akses API Documentation:
-- Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
-- ReDoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+### 4. Build dan Jalankan Versi Produksi
+```bash
+npm run build
+npm start
+```
 
 ---
 
@@ -46,5 +49,6 @@ Akses API Documentation:
 
 ## 🧪 Menjalankan Automated Tests
 ```bash
-pytest -v
+npm test
 ```
+*Menggunakan [Vitest](https://vitest.dev/) untuk menguji Auth, Mutasi Transaksi & Guard Saldo, Laporan PDF/Excel, dan Endpoint API.*
