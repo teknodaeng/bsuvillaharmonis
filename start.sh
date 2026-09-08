@@ -5,17 +5,18 @@ echo "Starting BSU Villa Harmonis Servers..."
 echo "======================================"
 
 # Start Backend
-echo "[1/2] Starting Backend Server (FastAPI)..."
+echo "[1/2] Starting Backend Server (Hono / Node.js)..."
 cd backend
-# Check if venv exists
-if [ -d "venv" ]; then
-    source venv/bin/activate
-    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
+if [ -d "node_modules" ]; then
+    npm run dev &
     BACKEND_PID=$!
     echo "Backend is running on http://localhost:8000 (PID: $BACKEND_PID)"
 else
-    echo "Error: Virtual environment 'venv' not found in backend directory."
-    exit 1
+    echo "Installing backend dependencies..."
+    npm install
+    npm run dev &
+    BACKEND_PID=$!
+    echo "Backend is running on http://localhost:8000 (PID: $BACKEND_PID)"
 fi
 
 # Return to root directory

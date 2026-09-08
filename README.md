@@ -67,12 +67,12 @@ Aplikasi web modern dan terpadu untuk pengelolaan operasional **Bank Sampah Unit
 ## 🛠 Teknologi & Arsitektur
 
 ### Backend
-- **Framework**: [Python 3.10+](https://www.python.org/) + [FastAPI](https://fastapi.tiangolo.com/) (Asynchronous High-Performance API)
-- **Database**: SQLite3 lokal (`backend/bsuvh.db`) / [Turso LibSQL](https://turso.tech/) Cloud Database
-- **Validasi Data**: [Pydantic v2](https://docs.pydantic.dev/) + Pydantic Settings
-- **Autentikasi & Keamanan**: JWT (*JSON Web Tokens*) via PyJWT + Bcrypt Password Hashing
-- **Dokumen Generator**: [ReportLab](https://www.reportlab.com/) (PDF Generation) & [OpenPyXL](https://openpyxl.readthedocs.io/) (Excel Generation)
-- **Testing**: [Pytest](https://docs.pytest.org/)
+- **Framework**: [Hono v4](https://hono.dev/) Web Application Framework + [Node.js](https://nodejs.org/) (TypeScript)
+- **Database**: SQLite3 lokal (`backend/bsuvh.db`) / [Turso LibSQL](https://turso.tech/) via `@libsql/client`
+- **Validasi Data**: [Zod](https://zod.dev/) + `@hono/zod-validator`
+- **Autentikasi & Keamanan**: JWT (*JSON Web Tokens*) via `jsonwebtoken` + Bcrypt Password Hashing (`bcryptjs`)
+- **Dokumen Generator**: [PDFKit](https://pdfkit.org/) (PDF Generation Struk & Laporan) & [ExcelJS](https://github.com/exceljs/exceljs) (Excel Operational Report)
+- **Testing**: [Vitest](https://vitest.dev/)
 
 ### Frontend
 - **Framework**: [React 18](https://react.dev/) + [Vite](https://vitejs.dev/)
@@ -89,17 +89,20 @@ Aplikasi web modern dan terpadu untuk pengelolaan operasional **Bank Sampah Unit
 
 ```text
 bsuvillaharmonis/
-├── backend/                        # Backend REST API (FastAPI)
-│   ├── app/
-│   │   ├── api/v1/                 # Endpoint REST API (auth, transactions, nasabah, reports, dll)
-│   │   ├── core/                   # Konfigurasi app, security, dan database connector
-│   │   ├── models/                 # Definisi skema dan model database
-│   │   ├── schemas/                # Skema request & response Pydantic
-│   │   ├── services/               # Logika bisnis (auth, transaksi, laporan, struk, nasabah)
-│   │   └── utils/                  # Helper format uang, tanggal, dan berat
-│   ├── tests/                      # Automated unit & integration tests (Pytest)
+├── backend/                        # Backend REST API (Hono / TypeScript)
+│   ├── src/
+│   │   ├── core/                   # Config, LibSQL database client, security
+│   │   ├── db/                     # Migrations DDL & default seed
+│   │   ├── middleware/             # JWT auth, role guard, error handler
+│   │   ├── routes/                 # Hono route handlers (auth, transactions, nasabah, reports, dll)
+│   │   ├── schemas/                # Skema validasi Zod
+│   │   ├── services/               # Logika bisnis (transaksi atomik, guard saldo, struk PDF, excel)
+│   │   ├── types/                  # Typed Hono Env & model interfaces
+│   │   ├── utils/                  # Currency, formatting, standard response
+│   │   └── index.ts                # Server entry point
+│   ├── tests/                      # Automated unit & integration tests (Vitest)
 │   ├── bsuvh.db                    # Database SQLite3
-│   ├── requirements.txt            # Dependensi Python
+│   ├── package.json                # Dependensi backend & scripts
 │   └── .env                        # Konfigurasi environment backend
 │
 ├── frontend/                       # Frontend Web App (React + Vite)
@@ -121,8 +124,7 @@ bsuvillaharmonis/
 ## 🚀 Panduan Instalasi & Menjalankan Aplikasi
 
 ### Prasyarat Sistem
-- **Python**: Versi 3.10 atau lebih baru (`python3 --version`)
-- **Node.js**: Versi 18 atau lebih baru (`node --version`)
+- **Node.js**: Versi 20 atau lebih baru (`node --version`)
 - **NPM**: Versi 9 atau lebih baru (`npm --version`)
 
 ---
@@ -140,24 +142,20 @@ chmod +x start.sh
 
 ### Cara Manual (Menjalankan Terpisah)
 
-#### 1. Menjalankan Backend (FastAPI)
+#### 1. Menjalankan Backend (Hono / TypeScript)
 
 ```bash
 # 1. Masuk ke folder backend
 cd backend
 
-# 2. Buat & aktifkan virtual environment (jika belum ada)
-python3 -m venv venv
-source venv/bin/activate
+# 2. Install dependensi
+npm install
 
-# 3. Install dependensi
-pip install -r requirements.txt
-
-# 4. Salin file environment jika belum ada
+# 3. Salin file environment jika belum ada
 cp .env.example .env
 
-# 5. Jalankan server backend
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# 4. Jalankan server backend development
+npm run dev
 ```
 > Server backend berjalan di: `http://localhost:8000`
 

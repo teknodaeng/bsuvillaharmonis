@@ -10,13 +10,34 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## 📌 Rekapitulasi Versi Rilis
 
-- [v1.1.0 (Current - Production Ready)](#v110---2026-09-08-production-ready) — Pembaruan PRD Final, Penyelarasan Dokumen Spesifikasi Sistem & Validasi UAT 100%
+- [v2.0.0 (Current - Hono Architecture)](#v200---2026-09-08-hono-web-framework-architecture) — Modernisasi Arsitektur Backend ke Hono Web Application Framework (TypeScript)
+- [v1.1.0](#v110---2026-09-08-production-ready) — Pembaruan PRD Final, Penyelarasan Dokumen Spesifikasi Sistem & Validasi UAT 100%
 - [v1.0.3](#v103---2026-09-06) — Perbaikan Autentikasi Login, Multi-Identifier, & Penanganan Sesi Pengguna
 - [v1.0.2](#v102---2026-09-04) — Standardisasi Dependensi, Pembaruan Requirements & Script Otomasi Start
 - [v1.0.1](#v101---2026-09-03) — Penyempurnaan Generator Laporan (Text-Wrapping PDF & Auto-Fit Excel) serta Pengujian UAT
 - [v1.0.0 (Initial Stable Release)](#v100---2026-09-02) — Peluncuran Sistem Tabungan BSU Villa Harmonis (Fitur Inti & Modul Lengkap)
 - [v0.9.0 (Beta / Second Commit)](#v090---2026-08-28) — Integrasi Master Data Dinamis, Transaksi Cerdas Autocomplete, & Manajemen Petugas
 - [v0.1.0 (Alpha / First Commit)](#v010---2026-08-20) — Inisialisasi Repositori, Arsitektur Monorepo, & Skema Basis Data Awal
+
+---
+
+## [v2.0.0] - 2026-09-08 (Hono Web Framework Architecture & Frontend Alignment)
+
+### 🚀 Modernisasi Arsitektur Backend & Penyelarasan Frontend
+- **Implementasi Penuh Backend TypeScript + Hono**:
+  - Menggantikan backend Python + FastAPI secara total dengan **Hono Web Application Framework** v4 (`@hono/node-server`) berbasis Node.js 20+ dan TypeScript ESM.
+  - Implementasi struktur modular: `core` (database client `@libsql/client` dengan transaksi atomik `TxExecutor`, security bcrypt & JWT), `db` (migrasi DDL & seeding otomatis), `middleware` (auth JWT, role guard, central error handler), `schemas` (validasi Zod terpusat), `services` (transaksi atomik, sequence generator, balance guard, generator PDF & Excel), dan `routes` (`/auth`, `/admin/nasabah`, `/me`, `/admin/users`, `/master/categories`, `/master/waste-prices`, `/admin/transactions`, `/admin/reports`, `/admin/dashboard`).
+  - Ekspor dokumen operasional & bukti struk thermal menggunakan **PDFKit** dan spreadsheet **ExcelJS**.
+  - Rangkaian pengujian otomatis menggunakan **Vitest** dengan 13 skenario tes lulus 100%.
+- **Penyelarasan Frontend (React + Vite)**:
+  - Mengoreksi fallback port `API_BASE_URL` dari `8001` ke `8000` pada `constants/app.js`.
+  - Menambahkan proxy Vite `/api` ke `http://localhost:8000` pada `vite.config.js` untuk kelancaran komunikasi jaringan lokal.
+  - Menambahkan flag transisi React Router v7 pada `<BrowserRouter>` di `App.jsx` untuk menonaktifkan peringatan masa depan di konsol browser.
+  - Memperbaiki parser `CORS_ORIGINS` di backend agar mendukung string JSON array, comma-separated, dan wildcard secara tangguh.
+- **Infrastruktur & Script Otomasi**:
+  - Memperbarui [start.sh](start.sh) untuk mendeteksi `node_modules` dan menyalakan backend Hono (`npm run dev`) serta frontend sekaligus.
+  - Memperbarui [backend/Dockerfile](backend/Dockerfile) ke multi-stage build Node.js 20 Alpine.
+  - Memperbarui dokumentasi sistem di [README.md](README.md) dan [backend/README.md](backend/README.md).
 
 ---
 
