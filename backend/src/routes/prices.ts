@@ -26,6 +26,12 @@ pricesRouter.get('/', async (c) => {
   return successResponse(c, result, 'Master harga berhasil dimuat.');
 });
 
+pricesRouter.get('/:id/histories', async (c) => {
+  const id = c.req.param('id');
+  const result = await priceService.getPriceHistories(id);
+  return successResponse(c, result, 'Riwayat perubahan harga berhasil dimuat.');
+});
+
 pricesRouter.get('/:id', async (c) => {
   const id = c.req.param('id');
   const result = await priceService.getPriceById(id);

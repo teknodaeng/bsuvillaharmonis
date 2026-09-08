@@ -16,6 +16,7 @@ export async function seedDatabase() {
       [adminId, 'admin', hashedPwd]
     );
     console.log('[SEED] Default admin dibuat: admin / AdminPassword123!');
+    console.warn('[SECURITY WARNING] Akun admin default menggunakan kata sandi bawaan. Harap segera ubah kata sandi ini setelah inisialisasi awal sistem!');
   }
 
   // 2. Seed Default Categories & Active Prices

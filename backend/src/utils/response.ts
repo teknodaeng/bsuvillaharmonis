@@ -1,5 +1,4 @@
 import { Context } from 'hono';
-import { StatusCode } from 'hono/utils/http-status';
 
 export class AppError extends Error {
   public statusCode: number;

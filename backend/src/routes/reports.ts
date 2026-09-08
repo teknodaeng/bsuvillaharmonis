@@ -3,11 +3,18 @@ import { AppEnv } from '../types/index.js';
 import { reportService } from '../services/reportService.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/roleGuard.js';
+import { rateLimiter } from '../middleware/rateLimiter.js';
 
 export const reportsRouter = new Hono<AppEnv>();
 
-// All routes require ADMIN
-reportsRouter.use('*', authMiddleware, requireAdmin);
+const reportsLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: 'Terlalu banyak permintaan pembuatan dokumen laporan. Silakan tunggu beberapa saat.',
+});
+
+// All routes require ADMIN and Rate Limiting
+reportsRouter.use('*', authMiddleware, requireAdmin, reportsLimiter);
 
 // 1. Transactions Report
 reportsRouter.get('/transactions.xlsx', async (c) => {

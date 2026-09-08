@@ -4,6 +4,7 @@ import { authService } from '../services/authService.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { successResponse } from '../utils/response.js';
 import { validateJson } from '../utils/validator.js';
+import { rateLimiter } from '../middleware/rateLimiter.js';
 import {
   changePasswordSchema,
   loginSchema,
@@ -13,8 +14,20 @@ import {
 
 export const authRouter = new Hono<AppEnv>();
 
+const loginLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: 'Terlalu banyak percobaan login. Silakan tunggu 1 menit.',
+});
+
+const registerLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: 'Terlalu banyak permintaan registrasi dari alamat IP ini. Silakan tunggu beberapa saat.',
+});
+
 // POST /api/v1/auth/register
-authRouter.post('/register', validateJson(registerSchema), async (c) => {
+authRouter.post('/register', registerLimiter, validateJson(registerSchema), async (c) => {
   const data = c.req.valid('json' as any);
   const result = await authService.register(data);
   return successResponse(
@@ -26,7 +39,7 @@ authRouter.post('/register', validateJson(registerSchema), async (c) => {
 });
 
 // POST /api/v1/auth/login
-authRouter.post('/login', validateJson(loginSchema), async (c) => {
+authRouter.post('/login', loginLimiter, validateJson(loginSchema), async (c) => {
   const data = c.req.valid('json' as any);
   const result = await authService.login(data);
   return successResponse(c, result, 'Login berhasil.');

@@ -1,9 +1,18 @@
 import { z } from 'zod';
 
+const passwordValidation = z
+  .string()
+  .min(8, 'Kata sandi minimal 8 karakter.')
+  .max(100)
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/,
+    'Kata sandi harus mengandung kombinasi huruf besar, huruf kecil, dan angka atau simbol.'
+  );
+
 export const userCreateSchema = z.object({
   username: z.string().trim().min(3, 'Username minimal 3 karakter.').max(50),
   name: z.string().trim().min(1, 'Nama lengkap wajib diisi.').max(150),
-  password: z.string().min(6, 'Kata sandi minimal 6 karakter.').max(100),
+  password: passwordValidation,
   role: z.enum(['ADMIN', 'NASABAH']).default('ADMIN'),
   email: z.string().email('Format email tidak valid.').optional().nullable(),
   phone: z.string().optional().nullable(),
@@ -26,7 +35,7 @@ export const userStatusUpdateSchema = z.object({
 });
 
 export const userResetPasswordSchema = z.object({
-  new_password: z.string().min(6, 'Kata sandi baru minimal 6 karakter.').max(100),
+  new_password: passwordValidation,
 });
 
 export type UserCreateInput = z.infer<typeof userCreateSchema>;
