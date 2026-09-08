@@ -11,6 +11,11 @@ export const priceService = {
     return res.data.data;
   },
 
+  getPriceHistories: async (priceId) => {
+    const res = await apiClient.get(`/master/waste-prices/${priceId}/histories`);
+    return res.data.data;
+  },
+
   createPrice: async (payload) => {
     const res = await apiClient.post("/admin/master/waste-prices", payload);
     return res.data.data;

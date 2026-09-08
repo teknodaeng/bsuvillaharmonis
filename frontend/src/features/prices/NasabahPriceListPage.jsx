@@ -1,6 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Sparkles, Calendar, Package, Layers, LayoutGrid, List, Tag, AlertCircle } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  Calendar,
+  Package,
+  Layers,
+  LayoutGrid,
+  List,
+  ArrowDownUp,
+  Tag,
+  CheckCircle2,
+} from "lucide-react";
 import { priceService } from "../../services/priceService";
 import { categoryService } from "../../services/categoryService";
 import { PageHeader } from "../../components/layout/PageHeader";
@@ -18,13 +29,16 @@ import { formatDate } from "../../utils/formatting";
 export const NasabahPriceListPage = () => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [sortBy, setSortBy] = useState("default"); // "default" | "price_asc" | "price_desc" | "name_asc"
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "table"
 
-  // Fetch active categories for dropdown filter
-  const { data: categories } = useQuery({
+  // Fetch active categories for dropdown & chips filter
+  const { data: categoriesData } = useQuery({
     queryKey: ["nasabah-categories-filter"],
-    queryFn: () => categoryService.listCategories({ is_active: true }),
+    queryFn: () => categoryService.listCategories({ is_active: true, page_size: 100 }),
   });
+
+  const categories = categoriesData?.items || (Array.isArray(categoriesData) ? categoriesData : []);
 
   // Fetch active price items from master price service
   const { data: pricesData, isLoading } = useQuery({
@@ -35,11 +49,28 @@ export const NasabahPriceListPage = () => {
         category_id: categoryFilter || undefined,
         search: search || undefined,
         page: 1,
-        page_size: 100,
+        page_size: 150,
       }),
   });
 
   const priceItems = pricesData?.items || [];
+
+  // Sort prices client-side for immediate responsiveness
+  const sortedItems = useMemo(() => {
+    const list = [...priceItems];
+    if (sortBy === "price_asc") {
+      list.sort((a, b) => (a.price_per_kg || 0) - (b.price_per_kg || 0));
+    } else if (sortBy === "price_desc") {
+      list.sort((a, b) => (b.price_per_kg || 0) - (a.price_per_kg || 0));
+    } else if (sortBy === "name_asc") {
+      list.sort((a, b) =>
+        (a.group_name || a.category_name || "").localeCompare(
+          b.group_name || b.category_name || ""
+        )
+      );
+    }
+    return list;
+  }, [priceItems, sortBy]);
 
   const tableColumns = [
     {
@@ -57,13 +88,13 @@ export const NasabahPriceListPage = () => {
       ),
     },
     {
-      title: "Kelompok",
+      title: "Kelompok / Jenis",
       key: "group_name",
       render: (val, row) => (
         <div className="space-y-1">
           <span className="font-semibold text-emerald-900 block">{val || row.category_name}</span>
           {row.price_code && (
-            <Badge variant="ACTIVE" className="text-[10px] font-mono">
+            <Badge variant="ACTIVE" className="text-[10px] font-mono font-bold">
               {row.price_code}
             </Badge>
           )}
@@ -95,15 +126,15 @@ export const NasabahPriceListPage = () => {
       ),
     },
     {
-      title: "Harga Beli",
+      title: "Tarif Beli",
       key: "price_per_kg",
       align: "right",
-      render: (val) => (
+      render: (val, row) => (
         <div className="text-right">
           <span className="text-sm font-black text-emerald-700 block">
             {formatRupiah(val)}
           </span>
-          <span className="text-[11px] text-gray-400 font-medium">/ kg</span>
+          <span className="text-[11px] text-gray-400 font-medium">/ {row.unit || "kg"}</span>
         </div>
       ),
     },
@@ -113,7 +144,7 @@ export const NasabahPriceListPage = () => {
     <div className="space-y-6">
       <PageHeader
         title="Katalog Harga Sampah Aktif"
-        subtitle="Daftar tarif beli sampah per kilogram yang saat ini berlaku di Bank Sampah Unit Villa Harmonis"
+        subtitle={`Daftar tarif beli sampah yang saat ini berlaku di Bank Sampah Unit Villa Harmonis (${sortedItems.length} jenis sampah aktif)`}
       />
 
       {/* Info Tip Card */}
@@ -125,18 +156,49 @@ export const NasabahPriceListPage = () => {
           <div>
             <h4 className="text-sm font-bold text-emerald-950">Tips Penyetoran Sampah:</h4>
             <p className="text-xs text-emerald-800/90 mt-0.5 leading-relaxed">
-              Pastikan sampah sudah disortir sesuai kategori dan kelompoknya, dibersihkan dari sisa cairan/kotoran, serta dikeringkan dan dipadatkan sebelum disetor agar proses penimbangan lebih cepat dan nilai setoran optimal.
+              Pastikan sampah sudah dipilah sesuai kategori dan kelompoknya, dibersihkan dari sisa cairan/kotoran, serta dikeringkan dan dipadatkan sebelum disetor agar proses penimbangan lebih cepat dan nilai setoran optimal.
             </p>
           </div>
         </div>
       </Card>
 
+      {/* Quick Filter Category Chips */}
+      {categories.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("")}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all duration-150 shrink-0 ${
+              categoryFilter === ""
+                ? "bg-emerald-700 text-white shadow-sm font-semibold"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Semua Kategori ({priceItems.length})
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setCategoryFilter(String(cat.id))}
+              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all duration-150 shrink-0 ${
+                categoryFilter === String(cat.id)
+                  ? "bg-emerald-700 text-white shadow-sm font-semibold"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Search & Filter Controls */}
       <Card className="p-4">
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input
-              placeholder="Cari kategori, kelompok, contoh barang..."
+              placeholder="Cari jenis, kelompok, kode, contoh..."
               icon={Search}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -147,11 +209,22 @@ export const NasabahPriceListPage = () => {
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               options={
-                categories?.map((c) => ({
+                categories.map((c) => ({
                   label: c.name,
                   value: String(c.id),
-                })) || []
+                }))
               }
+            />
+
+            <Select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              options={[
+                { label: "Urutan Standar", value: "default" },
+                { label: "Tarif Termurah", value: "price_asc" },
+                { label: "Tarif Termahal", value: "price_desc" },
+                { label: "Nama Sampah (A-Z)", value: "name_asc" },
+              ]}
             />
           </div>
 
@@ -185,7 +258,7 @@ export const NasabahPriceListPage = () => {
           <Spinner size="lg" />
           <p className="text-xs text-gray-500 font-medium mt-3">Memuat katalog harga sampah terkini...</p>
         </div>
-      ) : priceItems.length === 0 ? (
+      ) : sortedItems.length === 0 ? (
         <EmptyState
           title="Harga Sampah Tidak Ditemukan"
           description="Tidak ada data harga sampah aktif yang cocok dengan kriteria pencarian Anda."
@@ -193,13 +266,13 @@ export const NasabahPriceListPage = () => {
       ) : viewMode === "table" ? (
         <DataTable
           columns={tableColumns}
-          data={priceItems}
+          data={sortedItems}
           isLoading={isLoading}
           emptyMessage="Belum ada harga sampah yang terdaftar."
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {priceItems.map((item) => (
+          {sortedItems.map((item) => (
             <Card
               key={item.id}
               className="hover:shadow-lg transition-all duration-200 border-gray-200/90 flex flex-col justify-between overflow-hidden relative group hover:border-emerald-300"
@@ -270,7 +343,9 @@ export const NasabahPriceListPage = () => {
                   <span className="text-xl font-black text-emerald-700 tracking-tight">
                     {formatRupiah(item.price_per_kg)}
                   </span>
-                  <span className="text-xs font-semibold text-gray-500 ml-1">/ kg</span>
+                  <span className="text-xs font-semibold text-gray-500 ml-1">
+                    / {item.unit || "kg"}
+                  </span>
                 </div>
               </div>
             </Card>

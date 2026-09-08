@@ -65,8 +65,11 @@ venv.bak/
 # ------------------------------------------
 # 4. Node.js & Frontend (Vite / React)
 # ------------------------------------------
+node_modules
 node_modules/
+backend/node_modules/
 frontend/node_modules/
+backend/dist/
 frontend/dist/
 dist/
 dist-ssr/
@@ -138,3 +141,6 @@ UAT.md
 
 backend/bsuvh.db-shm
 backend/bsuvh.db-wal
+bsuvillaharmonis.code-workspace
+Audit_report_security.md
+Security_Checklist.md

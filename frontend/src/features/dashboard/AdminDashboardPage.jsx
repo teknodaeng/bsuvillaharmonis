@@ -12,6 +12,8 @@ import {
   FileText,
   Printer,
   ChevronRight,
+  Scale,
+  Layers,
 } from "lucide-react";
 import { dashboardService } from "../../services/dashboardService";
 import { Card } from "../../components/ui/Card";
@@ -141,7 +143,7 @@ export const AdminDashboardPage = () => {
       </div>
 
       {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* Total Nasabah */}
         <Card className="border-gray-200/80">
           <div className="flex items-center justify-between">
@@ -177,6 +179,24 @@ export const AdminDashboardPage = () => {
               {data?.total_balance_all_formatted || "Rp 0"}
             </span>
             <p className="text-[11px] text-gray-400 mt-0.5">Total simpanan seluruh nasabah</p>
+          </div>
+        </Card>
+
+        {/* Total Berat Sampah Terkumpul */}
+        <Card className="border-gray-200/80 bg-gradient-to-br from-white to-teal-50/30">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Total Sampah Terkumpul
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+              <Scale className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="text-2xl font-extrabold text-teal-700">
+              {data?.total_weight_kg_formatted || "0,00 kg"}
+            </span>
+            <p className="text-[11px] text-gray-400 mt-0.5">Akumulasi seluruh setoran nasabah</p>
           </div>
         </Card>
 
@@ -216,6 +236,84 @@ export const AdminDashboardPage = () => {
           </div>
         </Card>
       </div>
+
+      {/* Distribution of Waste Weight by Category (Kg) */}
+      <Card
+        title="Distribusi Berat Sampah per Kategori"
+        subtitle="Akumulasi berat dalam Kilogram (Kg) dan kontribusi per jenis kategori sampah"
+        action={
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200/60 flex items-center gap-1.5">
+              <Scale className="w-3.5 h-3.5" />
+              Total Terkumpul: {data?.total_weight_kg_formatted || "0,00 kg"}
+            </span>
+          </div>
+        }
+      >
+        {data?.categories_weight && data.categories_weight.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {data.categories_weight.map((cat) => (
+              <div
+                key={cat.category_id}
+                className="p-4 rounded-xl border border-gray-100 bg-white hover:border-teal-200 hover:shadow-xs transition-all duration-200 flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0" />
+                      <h4
+                        className="font-semibold text-gray-900 text-sm truncate"
+                        title={cat.category_name}
+                      >
+                        {cat.category_name}
+                      </h4>
+                    </div>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 shrink-0 border border-teal-200/50 font-mono">
+                      {cat.percentage}%
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-baseline justify-between">
+                    <div>
+                      <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                        {cat.total_weight_kg.toLocaleString("id-ID", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                      <span className="text-xs font-bold text-teal-600 uppercase ml-1.5">
+                        Kg
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500 font-medium">
+                      {cat.transaction_count} transaksi
+                    </span>
+                  </div>
+
+                  {/* Visual progress bar */}
+                  <div className="w-full bg-gray-100 rounded-full h-2 mt-2.5 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-teal-500 to-emerald-600 h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, Math.max(cat.total_weight_kg > 0 ? 4 : 0, cat.percentage))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                  <span>Nilai Transaksi:</span>
+                  <span className="font-bold text-gray-800">{cat.total_amount_formatted}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-400 text-sm">
+            Belum ada transaksi penyetoran sampah yang tercatat.
+          </div>
+        )}
+      </Card>
 
       {/* Recent Transactions */}
       <Card
