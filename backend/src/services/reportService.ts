@@ -4,6 +4,7 @@ import { db } from '../core/database.js';
 import { config } from '../core/config.js';
 import { formatRupiah } from '../utils/currency.js';
 import { formatDate, formatDateTime, formatKg } from '../utils/formatting.js';
+import { sanitizeExcelRow } from '../utils/sanitizeExcel.js';
 import { nasabahService } from './nasabahService.js';
 
 export class ReportService {
@@ -57,19 +58,21 @@ export class ReportService {
         totalTarik += item.debit || 0;
       }
 
-      const row = ws.addRow([
-        idx + 1,
-        item.transaction_no,
-        formatDateTime(item.transaction_date),
-        item.nasabah_customer_id,
-        item.nasabah_name,
-        item.type,
-        item.category_name || '-',
-        item.weight_kg ? Number(item.weight_kg.toFixed(3)) : '-',
-        item.price_per_kg || '-',
-        item.amount,
-        item.balance_after,
-      ]);
+      const row = ws.addRow(
+        sanitizeExcelRow([
+          idx + 1,
+          item.transaction_no,
+          formatDateTime(item.transaction_date),
+          item.nasabah_customer_id,
+          item.nasabah_name,
+          item.type,
+          item.category_name || '-',
+          item.weight_kg ? Number(item.weight_kg.toFixed(3)) : '-',
+          item.price_per_kg || '-',
+          item.amount,
+          item.balance_after,
+        ])
+      );
       row.alignment = { vertical: 'middle' };
     });
 
@@ -242,14 +245,16 @@ export class ReportService {
       sumRp += item.total_amount;
       sumTrx += item.transaction_count;
 
-      ws.addRow([
-        idx + 1,
-        item.category_name,
-        item.price_code || '-',
-        item.total_weight_kg,
-        item.total_amount,
-        item.transaction_count,
-      ]);
+      ws.addRow(
+        sanitizeExcelRow([
+          idx + 1,
+          item.category_name,
+          item.price_code || '-',
+          item.total_weight_kg,
+          item.total_amount,
+          item.transaction_count,
+        ])
+      );
     });
 
     const sumRow = ws.addRow(['TOTAL', '', '', sumKg, sumRp, sumTrx]);
@@ -383,18 +388,20 @@ export class ReportService {
 
     items.forEach((item, idx) => {
       totalSaldo += item.balance;
-      ws.addRow([
-        idx + 1,
-        item.customer_id,
-        item.account_no,
-        item.nik,
-        item.name,
-        item.nasabah_category,
-        item.phone,
-        item.address,
-        item.status,
-        item.balance,
-      ]);
+      ws.addRow(
+        sanitizeExcelRow([
+          idx + 1,
+          item.customer_id,
+          item.account_no,
+          item.nik,
+          item.name,
+          item.nasabah_category,
+          item.phone,
+          item.address,
+          item.status,
+          item.balance,
+        ])
+      );
     });
 
     const sumRow = ws.addRow([
@@ -531,16 +538,18 @@ export class ReportService {
     this.styleTableHeader(headerRow);
 
     items.forEach((item, idx) => {
-      ws.addRow([
-        idx + 1,
-        item.category_name,
-        item.group_name || '-',
-        item.price_code || '-',
-        item.example_items || '-',
-        item.price_per_kg,
-        formatDate(item.effective_date),
-        item.status,
-      ]);
+      ws.addRow(
+        sanitizeExcelRow([
+          idx + 1,
+          item.category_name,
+          item.group_name || '-',
+          item.price_code || '-',
+          item.example_items || '-',
+          item.price_per_kg,
+          formatDate(item.effective_date),
+          item.status,
+        ])
+      );
     });
 
     this.autoFitColumns(ws);

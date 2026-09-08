@@ -104,7 +104,6 @@ export class TransactionService {
     }
 
     const txDate = data.transaction_date || new Date().toISOString();
-    const currentBalance = await nasabahService.getNasabahBalance(data.nasabah_id);
 
     const txId = uuidv4();
     let categoryId: string | null = null;
@@ -114,7 +113,6 @@ export class TransactionService {
     let amount: number;
     let credit: number;
     let debit: number;
-    let balanceAfter: number;
 
     if (data.type === 'SETOR') {
       if (data.price_id) {
@@ -150,7 +148,6 @@ export class TransactionService {
       amount = Math.round(data.weight_kg * pricePerKg);
       credit = amount;
       debit = 0;
-      balanceAfter = currentBalance + credit;
     } else if (data.type === 'TARIK') {
       if (!data.amount || data.amount <= 0) {
         throw new AppError('Nominal tarik tunai harus lebih dari 0.', 400, 'INVALID_AMOUNT');
@@ -158,19 +155,28 @@ export class TransactionService {
       amount = data.amount;
       debit = amount;
       credit = 0;
-      if (currentBalance < debit) {
-        throw new AppError(
-          `Saldo tidak mencukupi. Saldo saat ini: ${formatRupiah(currentBalance)}`,
-          400,
-          'INSUFFICIENT_BALANCE'
-        );
-      }
-      balanceAfter = currentBalance - debit;
     } else {
       throw new AppError('Jenis transaksi tidak valid.', 400, 'INVALID_TYPE');
     }
 
     await db.transaction(async (tx) => {
+      // Hitung saldo secara atomik di dalam transaksi basis data
+      const currentBalance = await nasabahService.getNasabahBalance(data.nasabah_id, tx);
+      let balanceAfter: number;
+
+      if (data.type === 'SETOR') {
+        balanceAfter = currentBalance + credit;
+      } else {
+        if (currentBalance < debit) {
+          throw new AppError(
+            `Saldo tidak mencukupi. Saldo saat ini: ${formatRupiah(currentBalance)}`,
+            400,
+            'INSUFFICIENT_BALANCE'
+          );
+        }
+        balanceAfter = currentBalance - debit;
+      }
+
       const txNo = await this.generateTransactionNo(tx, txDate);
 
       await tx.execute({

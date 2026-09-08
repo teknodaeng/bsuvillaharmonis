@@ -31,11 +31,28 @@ function parseCorsOrigins(raw?: string): string[] {
     .filter(Boolean);
 }
 
+const rawSecretKey = process.env.APP_SECRET_KEY;
+const isProd = process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production';
+const DEFAULT_INSECURE_SECRET = 'supersecretkeyforbsuvillaharmonis2026changethisinprod';
+
+if (!rawSecretKey || rawSecretKey === DEFAULT_INSECURE_SECRET) {
+  if (isProd) {
+    console.error(
+      '[FATAL SECURITY ERROR] APP_SECRET_KEY wajib diatur di lingkungan produksi dan tidak boleh kosong atau menggunakan kunci default!'
+    );
+    process.exit(1);
+  } else if (process.env.NODE_ENV !== 'test') {
+    console.warn(
+      '[SECURITY WARNING] APP_SECRET_KEY menggunakan kunci default atau belum diatur. Sangat disarankan mengatur kunci acak minimal 32 karakter di .env!'
+    );
+  }
+}
+
 export const config = {
   PORT: parseInt(process.env.PORT || '8000', 10),
   APP_NAME: process.env.APP_NAME || 'BSU Villa Harmonis',
   APP_ENV: process.env.APP_ENV || 'development',
-  APP_SECRET_KEY: process.env.APP_SECRET_KEY || 'supersecretkeyforbsuvillaharmonis2026changethisinprod',
+  APP_SECRET_KEY: rawSecretKey || DEFAULT_INSECURE_SECRET,
   
   // Database configuration
   DATABASE_URL: process.env.DATABASE_URL || 'file:bsuvh.db',

@@ -8,7 +8,7 @@ import { transactionService } from '../services/transactionService.js';
 import { receiptService } from '../services/receiptService.js';
 import { successResponse } from '../utils/response.js';
 import { validateJson } from '../utils/validator.js';
-import { nasabahUpdateSchema } from '../schemas/nasabah.schema.js';
+import { nasabahSelfUpdateSchema } from '../schemas/nasabah.schema.js';
 
 export const meRouter = new Hono<AppEnv>();
 
@@ -23,7 +23,7 @@ meRouter.get('/nasabah', async (c) => {
 });
 
 // PUT /api/v1/me/nasabah
-meRouter.put('/nasabah', validateJson(nasabahUpdateSchema), async (c) => {
+meRouter.put('/nasabah', validateJson(nasabahSelfUpdateSchema), async (c) => {
   const user = c.get('user');
   const data = c.req.valid('json' as any);
   const nasabah = await nasabahService.updateNasabah(user.nasabah_id || user.id, data, user.id);

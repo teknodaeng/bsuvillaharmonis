@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { secureHeaders } from 'hono/secure-headers';
 import { serve } from '@hono/node-server';
 import { config } from './core/config.js';
 import { AppEnv } from './types/index.js';
@@ -29,6 +30,15 @@ export const app = new Hono<AppEnv>();
 
 // Global Middlewares
 app.use('*', logger());
+app.use(
+  '*',
+  secureHeaders({
+    xFrameOptions: 'DENY',
+    xContentTypeOptions: 'nosniff',
+    referrerPolicy: 'strict-origin-when-cross-origin',
+    xXssProtection: '1; mode=block',
+  })
+);
 
 app.use(
   '*',

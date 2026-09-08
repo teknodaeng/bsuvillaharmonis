@@ -1,15 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
-import { db } from '../core/database.js';
+import { db, TxExecutor } from '../core/database.js';
 import { hashPassword } from '../core/security.js';
 import { AppError } from '../utils/response.js';
 import {
   NasabahCreateInput,
   NasabahUpdateInput,
-  NasabahStatusUpdateInput,
 } from '../schemas/nasabah.schema.js';
 
 export class NasabahService {
-  public static async generateNextAccountNumber(tx?: any): Promise<string> {
+  public static async generateNextAccountNumber(tx?: TxExecutor): Promise<string> {
     const executor = tx || db;
     let row = await executor.fetchOne('SELECT last_number FROM account_sequences WHERE id = 1');
     let lastNumber = -1;
@@ -34,15 +33,15 @@ export class NasabahService {
     return `bsuvh${String(nextNumber).padStart(4, '0')}`;
   }
 
-  public static async getNasabahBalance(nasabahId: string): Promise<number> {
-    const latestTx = await db.fetchOne<any>(
-      `SELECT balance_after FROM transactions
-       WHERE nasabah_id = ?
-       ORDER BY transaction_date DESC, created_at DESC
-       LIMIT 1`,
+  public static async getNasabahBalance(nasabahId: string, tx?: TxExecutor): Promise<number> {
+    const executor = tx || db;
+    const balanceRow = await executor.fetchOne<any>(
+      `SELECT COALESCE(SUM(credit) - SUM(debit), 0) as balance
+       FROM transactions
+       WHERE nasabah_id = ?`,
       [nasabahId]
     );
-    return latestTx ? Number(latestTx.balance_after) : 0;
+    return balanceRow ? Number(balanceRow.balance) : 0;
   }
 
   public static async createNasabah(
