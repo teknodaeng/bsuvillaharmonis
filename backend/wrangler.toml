@@ -1,0 +1,20 @@
+name = "bsuvh-backend"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+
+# PENTING: Mengaktifkan emulasi pustaka inti Node.js (Buffer, Stream, Crypto, dll.)
+# untuk mendukung bcryptjs, exceljs, dan pdfkit di Workers
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+APP_NAME = "BSU Villa Harmonis"
+APP_ENV = "production"
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = "1440"
+REFRESH_TOKEN_EXPIRE_DAYS = "7"
+# Masukkan URL Turso Cloud Anda:
+DATABASE_URL = "libsql://bsuvh-aliefrahman.aws-ap-northeast-1.turso.io"
+# Izinkan semua domain frontend (Tencent Cloud EdgeOne, Cloudflare Pages, localhost):
+CORS_ORIGINS = "*"
+
+# Catatan: Rahasia (Secrets) tidak boleh ditulis di file ini, gunakan `wrangler secret`
