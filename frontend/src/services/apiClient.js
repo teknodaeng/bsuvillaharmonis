@@ -74,11 +74,21 @@ apiClient.interceptors.response.use(
       }
     }
 
-    const message =
+    let message =
       error.response?.data?.message ||
-      error.response?.data?.detail ||
-      error.message ||
-      "Terjadi kesalahan pada sistem.";
+      error.response?.data?.detail;
+
+    if (!message) {
+      if (error.message === "Network Error" || !error.response) {
+        message = `Gagal terhubung ke server backend (${API_BASE_URL}). Periksa koneksi internet, pastikan URL backend benar, dan CORS diizinkan.`;
+        console.error(
+          `[API Error] Network Error saat memanggil: ${originalRequest?.url || ''}. Base URL target: ${API_BASE_URL}.`,
+          error
+        );
+      } else {
+        message = error.message || "Terjadi kesalahan pada sistem.";
+      }
+    }
 
     return Promise.reject(new Error(message));
   }
