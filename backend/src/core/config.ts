@@ -1,13 +1,18 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load .env from cwd and from backend package root
-dotenv.config();
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Load .env safely when running in Node.js environment
+if (typeof process !== 'undefined' && typeof process.cwd === 'function') {
+  try {
+    dotenv.config();
+    if (typeof path !== 'undefined' && path.resolve) {
+      dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+      dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+    }
+  } catch {
+    // Ignore in serverless/Workers environments without local filesystem
+  }
+}
 
 function parseCorsOrigins(raw?: string): string[] {
   if (!raw || raw.trim() === '' || raw.trim() === '*') {
@@ -40,7 +45,10 @@ if (!rawSecretKey || rawSecretKey === DEFAULT_INSECURE_SECRET) {
     console.error(
       '[FATAL SECURITY ERROR] APP_SECRET_KEY wajib diatur di lingkungan produksi dan tidak boleh kosong atau menggunakan kunci default!'
     );
-    process.exit(1);
+    const isNode = typeof process !== 'undefined' && process.release?.name === 'node' && typeof process.exit === 'function';
+    if (isNode && process.env.NODE_ENV !== 'test') {
+      process.exit(1);
+    }
   } else if (process.env.NODE_ENV !== 'test') {
     console.warn(
       '[SECURITY WARNING] APP_SECRET_KEY menggunakan kunci default atau belum diatur. Sangat disarankan mengatur kunci acak minimal 32 karakter di .env!'

@@ -13,10 +13,11 @@ class Database {
 
   constructor() {
     let url = config.DATABASE_URL;
+    const cwd = typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '';
     if (!url) {
-      url = `file:${path.resolve(process.cwd(), config.LOCAL_DB_PATH)}`;
+      url = cwd ? `file:${path.resolve(cwd, config.LOCAL_DB_PATH)}` : 'file:bsuvh.db';
     } else if (url.startsWith('file:') && !path.isAbsolute(url.slice(5))) {
-      url = `file:${path.resolve(process.cwd(), url.slice(5))}`;
+      url = cwd ? `file:${path.resolve(cwd, url.slice(5))}` : url;
     }
 
     this.client = createClient({

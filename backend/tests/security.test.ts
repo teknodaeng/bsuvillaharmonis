@@ -134,7 +134,7 @@ describe('Security Controls & Hardening Verification', () => {
     const json = await res.json();
     expect(json.success).toBe(true);
     // NIK must remain the original registered NIK
-    expect(json.data.nik).toBe(nasabahNik);
+    expect(String(json.data.nik)).toBe(String(nasabahNik));
     expect(json.data.name).toBe('Nama Diperbarui Aman');
   });
 

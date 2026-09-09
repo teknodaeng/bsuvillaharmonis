@@ -1,110 +1,12 @@
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
-import { secureHeaders } from 'hono/secure-headers';
 import { serve } from '@hono/node-server';
+import { app } from './app.js';
 import { config } from './core/config.js';
-import { AppEnv } from './types/index.js';
-import { errorHandler } from './middleware/errorHandler.js';
 import { runMigrations } from './db/migrations.js';
 import { seedDatabase } from './db/seed.js';
-import { successResponse } from './utils/response.js';
 
-import { authRouter } from './routes/auth.js';
-import { nasabahRouter } from './routes/nasabah.js';
-import { meRouter } from './routes/me.js';
-import { usersRouter } from './routes/users.js';
-import {
-  adminCategoriesRouter,
-  categoriesRouter,
-} from './routes/categories.js';
-import {
-  adminPricesRouter,
-  pricesRouter,
-} from './routes/prices.js';
-import { transactionsRouter } from './routes/transactions.js';
-import { reportsRouter } from './routes/reports.js';
-import { dashboardRouter } from './routes/dashboard.js';
+export { app };
 
-export const app = new Hono<AppEnv>();
-
-// Global Middlewares
-app.use('*', logger());
-app.use(
-  '*',
-  secureHeaders({
-    xFrameOptions: 'DENY',
-    xContentTypeOptions: 'nosniff',
-    referrerPolicy: 'strict-origin-when-cross-origin',
-    xXssProtection: '1; mode=block',
-  })
-);
-
-app.use(
-  '*',
-  cors({
-    origin: (origin) => {
-      if (
-        !origin ||
-        config.CORS_ORIGINS.includes('*') ||
-        config.CORS_ORIGINS.includes(origin)
-      ) {
-        return origin || '*';
-      }
-      return null;
-    },
-    credentials: true,
-    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-      'Origin',
-    ],
-    exposeHeaders: ['Content-Length', 'Content-Disposition'],
-  })
-);
-
-// Global Error Handler
-app.onError(errorHandler);
-
-// System Endpoints
-app.get('/', (c) => {
-  return successResponse(
-    c,
-    {
-      app_name: config.APP_NAME,
-      version: '2.0.0',
-      framework: 'Hono Web Application Framework',
-      status: 'online',
-    },
-    `Selamat datang di ${config.APP_NAME} API`
-  );
-});
-
-app.get('/health', (c) => {
-  return c.json({ status: 'healthy' });
-});
-
-// API Routes mounting under /api/v1
-const v1 = new Hono<AppEnv>();
-
-v1.route('/auth', authRouter);
-v1.route('/admin/nasabah', nasabahRouter);
-v1.route('/me', meRouter);
-v1.route('/admin/users', usersRouter);
-v1.route('/master/categories', categoriesRouter);
-v1.route('/admin/master/categories', adminCategoriesRouter);
-v1.route('/master/waste-prices', pricesRouter);
-v1.route('/admin/master/waste-prices', adminPricesRouter);
-v1.route('/admin/transactions', transactionsRouter);
-v1.route('/admin/reports', reportsRouter);
-v1.route('/admin', dashboardRouter);
-
-app.route('/api/v1', v1);
-
-// Server startup
+// Server startup for Node.js runtime
 export async function startServer() {
   try {
     console.log(`[INIT] Memulai backend ${config.APP_NAME} (Hono Framework)...`);
@@ -124,11 +26,15 @@ export async function startServer() {
     }
   } catch (err) {
     console.error('[FATAL] Gagal memulai server:', err);
-    process.exit(1);
+    if (typeof process !== 'undefined' && typeof process.exit === 'function') {
+      process.exit(1);
+    }
   }
 }
 
-// Start if executed directly
+// Start if executed directly in Node.js
 if (process.env.NODE_ENV !== 'test') {
   startServer();
 }
+
+export default app;
