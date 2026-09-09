@@ -1,6 +1,5 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { Recycle } from "lucide-react";
 import { APP_NAME, APP_TAGLINE } from "../../constants/app";
 import { ToastContainer } from "../ui/Toast";
 
@@ -11,8 +10,8 @@ export const PublicLayout = () => {
       
       {/* Top Header */}
       <div className="w-full max-w-md mx-auto text-center pt-4 sm:pt-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary-600 to-emerald-400 text-white shadow-lg shadow-primary-500/25 mb-3.5">
-          <Recycle className="w-8 h-8" />
+        <div className="inline-flex items-center justify-center w-20 h-20 mb-3 drop-shadow-sm">
+          <img src="/logo.png" alt={APP_NAME} className="w-full h-full object-contain" />
         </div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
           {APP_NAME}

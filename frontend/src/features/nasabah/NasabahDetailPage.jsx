@@ -53,13 +53,13 @@ export const NasabahDetailPage = () => {
     queryKey: ["nasabah-detail", nasabahId],
     queryFn: async () => {
       const res = await nasabahService.getNasabahDetail(nasabahId);
-      setEditNik(res.nik || "");
+      setEditNik(res.nik !== null && res.nik !== undefined ? String(res.nik) : "");
       setEditName(res.name);
       setEditNasabahCategory(res.nasabah_category || "Rumah Tangga/Individu");
-      setEditPhone(res.phone);
+      setEditPhone(res.phone !== null && res.phone !== undefined ? String(res.phone) : "");
       setEditAddress(res.address);
-      setEditRt(res.rt || "");
-      setEditRw(res.rw || "");
+      setEditRt(res.rt !== null && res.rt !== undefined ? String(res.rt) : "");
+      setEditRw(res.rw !== null && res.rw !== undefined ? String(res.rw) : "");
       setEditKelurahan(res.kelurahan || "");
       setEditKecamatan(res.kecamatan || "");
       setEditKabupatenKota(res.kabupaten_kota || "");
@@ -97,14 +97,33 @@ export const NasabahDetailPage = () => {
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
+
+    if (editRt && !/^\d{1,3}$/.test(editRt.trim())) {
+      addToast({
+        title: "Validasi Gagal",
+        message: "RT harus berupa angka 1 sampai 3 digit (contoh: 1 atau 001).",
+        type: "danger",
+      });
+      return;
+    }
+
+    if (editRw && !/^\d{1,3}$/.test(editRw.trim())) {
+      addToast({
+        title: "Validasi Gagal",
+        message: "RW harus berupa angka 1 sampai 3 digit (contoh: 1 atau 001).",
+        type: "danger",
+      });
+      return;
+    }
+
     updateMutation.mutate({
-      nik: editNik,
+      nik: editNik ? String(editNik).trim() : null,
       name: editName,
       nasabah_category: editNasabahCategory,
-      phone: editPhone,
+      phone: editPhone ? String(editPhone).trim() : null,
       address: editAddress,
-      rt: editRt || null,
-      rw: editRw || null,
+      rt: editRt ? editRt.trim() : null,
+      rw: editRw ? editRw.trim() : null,
       kelurahan: editKelurahan || null,
       kecamatan: editKecamatan || null,
       kabupaten_kota: editKabupatenKota || null,
@@ -347,14 +366,20 @@ export const NasabahDetailPage = () => {
                 <Input
                   label="RT"
                   value={editRt}
-                  onChange={(e) => setEditRt(e.target.value)}
-                  placeholder="Contoh: 001"
+                  onChange={(e) => setEditRt(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  maxLength={3}
+                  inputMode="numeric"
+                  placeholder="Contoh: 1 atau 001"
+                  helperText="1 s/d 3 digit angka"
                 />
                 <Input
                   label="RW"
                   value={editRw}
-                  onChange={(e) => setEditRw(e.target.value)}
-                  placeholder="Contoh: 005"
+                  onChange={(e) => setEditRw(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  maxLength={3}
+                  inputMode="numeric"
+                  placeholder="Contoh: 5 atau 005"
+                  helperText="1 s/d 3 digit angka"
                 />
               </div>
 

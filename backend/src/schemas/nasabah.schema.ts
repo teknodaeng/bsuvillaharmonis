@@ -1,18 +1,60 @@
 import { z } from 'zod';
 
+export const rtSchema = z
+  .union(
+    [
+      z.number().int().min(0).max(999),
+      z.string().trim().regex(/^\d{1,3}$/),
+    ],
+    {
+      errorMap: () => ({ message: 'RT harus berupa angka 1 sampai 3 digit (contoh: 1 atau 001).' }),
+    }
+  )
+  .transform((val) => (val === undefined ? undefined : String(val).trim()))
+  .optional()
+  .nullable()
+  .or(z.literal('').transform(() => null));
+
+export const rwSchema = z
+  .union(
+    [
+      z.number().int().min(0).max(999),
+      z.string().trim().regex(/^\d{1,3}$/),
+    ],
+    {
+      errorMap: () => ({ message: 'RW harus berupa angka 1 sampai 3 digit (contoh: 1 atau 001).' }),
+    }
+  )
+  .transform((val) => (val === undefined ? undefined : String(val).trim()))
+  .optional()
+  .nullable()
+  .or(z.literal('').transform(() => null));
+
+export const nikSchema = z
+  .union([
+    z.string().trim(),
+    z.number().transform((v) => String(v)),
+  ])
+  .refine((v) => /^\d{16}$/.test(v), {
+    message: 'NIK harus berupa 16 digit angka.',
+  });
+
+export const phoneSchema = z
+  .union([
+    z.string().trim(),
+    z.number().transform((v) => String(v)),
+  ])
+  .refine((v) => /^[0-9+\-\s]{8,20}$/.test(v), {
+    message: 'Format nomor HP tidak valid (8-20 digit).',
+  });
+
 export const nasabahCreateSchema = z.object({
-  nik: z
-    .string()
-    .trim()
-    .regex(/^\d{16}$/, 'NIK harus berupa 16 digit angka.'),
+  nik: nikSchema,
   name: z.string().trim().min(3, 'Nama lengkap minimal 3 karakter.'),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[0-9+\-\s]{8,20}$/, 'Format nomor HP tidak valid.'),
+  phone: phoneSchema,
   address: z.string().trim().min(5, 'Alamat minimal 5 karakter.'),
-  rt: z.string().optional().nullable(),
-  rw: z.string().optional().nullable(),
+  rt: rtSchema,
+  rw: rwSchema,
   kelurahan: z.string().optional().nullable(),
   kecamatan: z.string().optional().nullable(),
   kabupaten_kota: z.string().optional().nullable(),
@@ -23,21 +65,12 @@ export const nasabahCreateSchema = z.object({
 });
 
 export const nasabahUpdateSchema = z.object({
-  nik: z
-    .string()
-    .trim()
-    .regex(/^\d{16}$/, 'NIK harus berupa 16 digit angka.')
-    .optional()
-    .nullable(),
+  nik: nikSchema.optional().nullable(),
   name: z.string().trim().min(3, 'Nama lengkap minimal 3 karakter.').optional(),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[0-9+\-\s]{8,20}$/, 'Format nomor HP tidak valid.')
-    .optional(),
+  phone: phoneSchema.optional(),
   address: z.string().trim().min(5, 'Alamat minimal 5 karakter.').optional(),
-  rt: z.string().optional().nullable(),
-  rw: z.string().optional().nullable(),
+  rt: rtSchema,
+  rw: rwSchema,
   kelurahan: z.string().optional().nullable(),
   kecamatan: z.string().optional().nullable(),
   kabupaten_kota: z.string().optional().nullable(),
@@ -54,14 +87,10 @@ export const nasabahStatusUpdateSchema = z.object({
 // Self-update schema for Nasabah (NIK and category cannot be altered by nasabah)
 export const nasabahSelfUpdateSchema = z.object({
   name: z.string().trim().min(3, 'Nama lengkap minimal 3 karakter.').optional(),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[0-9+\-\s]{8,20}$/, 'Format nomor HP tidak valid.')
-    .optional(),
+  phone: phoneSchema.optional(),
   address: z.string().trim().min(5, 'Alamat minimal 5 karakter.').optional(),
-  rt: z.string().optional().nullable(),
-  rw: z.string().optional().nullable(),
+  rt: rtSchema,
+  rw: rwSchema,
   kelurahan: z.string().optional().nullable(),
   kecamatan: z.string().optional().nullable(),
   kabupaten_kota: z.string().optional().nullable(),

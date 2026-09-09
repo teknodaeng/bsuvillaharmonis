@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, History, DollarSign, User, LogOut, Recycle } from "lucide-react";
+import { LayoutDashboard, History, DollarSign, User, LogOut } from "lucide-react";
 import clsx from "clsx";
 import { APP_NAME } from "../../constants/app";
 import { useAuthStore } from "../../stores/authStore";
@@ -30,8 +30,8 @@ export const NasabahLayout = () => {
       <header className="bg-white border-b border-gray-200/80 sticky top-0 z-30 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary-600 to-emerald-400 flex items-center justify-center text-white shadow-md shadow-primary-500/20">
-              <Recycle className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs border border-gray-100 shrink-0">
+              <img src="/logo.png" alt={APP_NAME} className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-sm font-bold text-gray-900 tracking-tight">{APP_NAME}</h1>
