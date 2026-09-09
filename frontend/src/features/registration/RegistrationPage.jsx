@@ -40,8 +40,32 @@ const registrationSchema = z
       .min(8, "Nomor HP minimal 8 digit.")
       .regex(/^[0-9+\-\s]+$/, "Format nomor HP tidak valid."),
     address: z.string().min(5, "Alamat minimal 5 karakter."),
-    rt: z.string().optional().or(z.literal("")),
-    rw: z.string().optional().or(z.literal("")),
+    rt: z
+      .union(
+        [
+          z.number().int().min(0).max(999),
+          z.string().trim().regex(/^\d{1,3}$/),
+        ],
+        {
+          errorMap: () => ({ message: "RT harus berupa angka 1 sampai 3 digit (contoh: 1 atau 001)." }),
+        }
+      )
+      .optional()
+      .nullable()
+      .or(z.literal("")),
+    rw: z
+      .union(
+        [
+          z.number().int().min(0).max(999),
+          z.string().trim().regex(/^\d{1,3}$/),
+        ],
+        {
+          errorMap: () => ({ message: "RW harus berupa angka 1 sampai 3 digit (contoh: 1 atau 001)." }),
+        }
+      )
+      .optional()
+      .nullable()
+      .or(z.literal("")),
     kelurahan: z.string().optional().or(z.literal("")),
     kecamatan: z.string().optional().or(z.literal("")),
     kabupaten_kota: z.string().optional().or(z.literal("")),
@@ -239,16 +263,30 @@ export const RegistrationPage = () => {
         <div className="grid grid-cols-2 gap-3">
           <Input
             label="RT"
-            placeholder="Contoh: 001"
+            placeholder="Contoh: 1 atau 001"
+            maxLength={3}
+            inputMode="numeric"
+            helperText="1 s/d 3 digit angka"
             icon={MapPin}
-            {...register("rt")}
+            {...register("rt", {
+              onChange: (e) => {
+                e.target.value = e.target.value.replace(/\D/g, "").slice(0, 3);
+              },
+            })}
             error={errors.rt?.message}
           />
           <Input
             label="RW"
-            placeholder="Contoh: 005"
+            placeholder="Contoh: 5 atau 005"
+            maxLength={3}
+            inputMode="numeric"
+            helperText="1 s/d 3 digit angka"
             icon={MapPin}
-            {...register("rw")}
+            {...register("rw", {
+              onChange: (e) => {
+                e.target.value = e.target.value.replace(/\D/g, "").slice(0, 3);
+              },
+            })}
             error={errors.rw?.message}
           />
         </div>
