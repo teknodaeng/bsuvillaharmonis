@@ -1,7 +1,7 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Printer, Download, ArrowLeft, Recycle, CheckCircle2 } from "lucide-react";
+import { Printer, Download, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { receiptService } from "../../services/receiptService";
 import { useAuthStore } from "../../stores/authStore";
 import { Button } from "../../components/ui/Button";
@@ -92,8 +92,8 @@ export const ReceiptPage = () => {
       <div className="print-area bg-white rounded-2xl border border-gray-200/90 shadow-lg p-6 sm:p-8 text-gray-800 max-w-md mx-auto">
         {/* Receipt Header */}
         <div className="text-center pb-4 border-b-2 border-dashed border-gray-200">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary-600 text-white mb-2 shadow-xs">
-            <Recycle className="w-6 h-6" />
+          <div className="inline-flex items-center justify-center w-14 h-14 mb-2">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-tight">
             {receipt.app_name || receipt.bank_name || "BSU Villa Harmonis"}

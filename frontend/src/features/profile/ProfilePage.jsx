@@ -37,24 +37,55 @@ import { useAuthStore } from "../../stores/authStore";
 
 const editProfileSchema = z.object({
   nik: z
-    .string()
-    .min(16, "NIK harus 16 digit angka.")
-    .max(16, "NIK harus 16 digit angka.")
-    .regex(/^\d+$/, "NIK hanya boleh berisi angka."),
+    .union([
+      z.string().trim(),
+      z.number().transform((v) => String(v)),
+    ])
+    .refine((v) => /^\d{16}$/.test(v), {
+      message: "NIK harus berupa 16 digit angka.",
+    }),
   name: z.string().min(3, "Nama lengkap minimal 3 karakter."),
   nasabah_category: z.string().min(1, "Kategori nasabah wajib dipilih."),
   phone: z
-    .string()
-    .min(8, "Nomor HP minimal 8 digit.")
-    .regex(/^[0-9+\-\s]+$/, "Format nomor HP tidak valid."),
+    .union([
+      z.string().trim(),
+      z.number().transform((v) => String(v)),
+    ])
+    .refine((v) => /^[0-9+\-\s]{8,20}$/.test(v), {
+      message: "Format nomor HP tidak valid (8-20 digit).",
+    }),
   email: z
     .string()
     .email("Format email tidak valid.")
     .optional()
     .or(z.literal("")),
   address: z.string().min(5, "Alamat domisili minimal 5 karakter."),
-  rt: z.string().optional().or(z.literal("")),
-  rw: z.string().optional().or(z.literal("")),
+  rt: z
+    .union(
+      [
+        z.number().int().min(0).max(999),
+        z.string().trim().regex(/^\d{1,3}$/),
+      ],
+      {
+        errorMap: () => ({ message: "RT harus berupa angka 1 sampai 3 digit (contoh: 1 atau 001)." }),
+      }
+    )
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  rw: z
+    .union(
+      [
+        z.number().int().min(0).max(999),
+        z.string().trim().regex(/^\d{1,3}$/),
+      ],
+      {
+        errorMap: () => ({ message: "RW harus berupa angka 1 sampai 3 digit (contoh: 1 atau 001)." }),
+      }
+    )
+    .optional()
+    .nullable()
+    .or(z.literal("")),
   kelurahan: z.string().optional().or(z.literal("")),
   kecamatan: z.string().optional().or(z.literal("")),
   kabupaten_kota: z.string().optional().or(z.literal("")),
@@ -117,14 +148,14 @@ export const ProfilePage = () => {
   useEffect(() => {
     if (profile) {
       resetProfile({
-        nik: profile.nik || "",
+        nik: profile.nik !== null && profile.nik !== undefined ? String(profile.nik) : "",
         name: profile.name || "",
         nasabah_category: profile.nasabah_category || "Rumah Tangga/Individu",
-        phone: profile.phone || "",
+        phone: profile.phone !== null && profile.phone !== undefined ? String(profile.phone) : "",
         email: profile.email || "",
         address: profile.address || "",
-        rt: profile.rt || "",
-        rw: profile.rw || "",
+        rt: profile.rt !== null && profile.rt !== undefined ? String(profile.rt) : "",
+        rw: profile.rw !== null && profile.rw !== undefined ? String(profile.rw) : "",
         kelurahan: profile.kelurahan || "",
         kecamatan: profile.kecamatan || "",
         kabupaten_kota: profile.kabupaten_kota || "",
@@ -171,14 +202,14 @@ export const ProfilePage = () => {
     setProfileErrorMessage("");
     setProfileSuccessMessage("");
     updateProfileMutation.mutate({
-      nik: data.nik,
+      nik: String(data.nik).trim(),
       name: data.name,
       nasabah_category: data.nasabah_category,
-      phone: data.phone,
+      phone: String(data.phone).trim(),
       email: data.email || null,
       address: data.address,
-      rt: data.rt || null,
-      rw: data.rw || null,
+      rt: data.rt ? String(data.rt).trim() : null,
+      rw: data.rw ? String(data.rw).trim() : null,
       kelurahan: data.kelurahan || null,
       kecamatan: data.kecamatan || null,
       kabupaten_kota: data.kabupaten_kota || null,
@@ -380,16 +411,30 @@ export const ProfilePage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   label="RT"
-                  placeholder="Contoh: 001"
+                  placeholder="Contoh: 1 atau 001"
+                  maxLength={3}
+                  inputMode="numeric"
+                  helperText="1 s/d 3 digit angka"
                   icon={MapPin}
-                  {...registerProfile("rt")}
+                  {...registerProfile("rt", {
+                    onChange: (e) => {
+                      e.target.value = e.target.value.replace(/\D/g, "").slice(0, 3);
+                    },
+                  })}
                   error={profileErrors.rt?.message}
                 />
                 <Input
                   label="RW"
-                  placeholder="Contoh: 005"
+                  placeholder="Contoh: 5 atau 005"
+                  maxLength={3}
+                  inputMode="numeric"
+                  helperText="1 s/d 3 digit angka"
                   icon={MapPin}
-                  {...registerProfile("rw")}
+                  {...registerProfile("rw", {
+                    onChange: (e) => {
+                      e.target.value = e.target.value.replace(/\D/g, "").slice(0, 3);
+                    },
+                  })}
                   error={profileErrors.rw?.message}
                 />
               </div>

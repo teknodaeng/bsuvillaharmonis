@@ -9,7 +9,6 @@ import {
   DollarSign,
   FileText,
   LogOut,
-  Recycle,
   X,
 } from "lucide-react";
 import clsx from "clsx";
@@ -62,8 +61,8 @@ export const Sidebar = () => {
         {/* Logo Header */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary-600 to-emerald-400 flex items-center justify-center text-white shadow-md shadow-primary-900/40">
-              <Recycle className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-white p-1 flex items-center justify-center shadow-md shadow-primary-900/40 shrink-0">
+              <img src="/logo.png" alt={APP_NAME} className="w-full h-full object-contain" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-white tracking-tight">{APP_NAME}</h2>

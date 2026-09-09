@@ -1,18 +1,13 @@
 import { z } from 'zod';
+import { rtSchema, rwSchema, nikSchema, phoneSchema } from './nasabah.schema.js';
 
 export const registerSchema = z.object({
-  nik: z
-    .string()
-    .trim()
-    .regex(/^\d{16}$/, 'NIK harus berupa 16 digit angka.'),
+  nik: nikSchema,
   name: z.string().trim().min(3, 'Nama lengkap minimal 3 karakter.'),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[0-9+\-\s]{8,20}$/, 'Format nomor HP tidak valid.'),
+  phone: phoneSchema,
   address: z.string().trim().min(5, 'Alamat minimal 5 karakter.'),
-  rt: z.string().optional().nullable(),
-  rw: z.string().optional().nullable(),
+  rt: rtSchema,
+  rw: rwSchema,
   kelurahan: z.string().optional().nullable(),
   kecamatan: z.string().optional().nullable(),
   kabupaten_kota: z.string().optional().nullable(),

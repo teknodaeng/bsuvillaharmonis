@@ -140,8 +140,8 @@ export const LoginPage = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
-          label="ID Nasabah / No. Rekening / NIK / Username"
-          placeholder="Contoh: bsuvh0001 atau 3201123456780001"
+          label="ID Nasabah / No. Rekening / NIK"
+          placeholder="Contoh: bsuvh0001 atau 7371123456780001"
           icon={User}
           required
           {...register("identifier")}
