@@ -1,7 +1,21 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Search, Eye, Power, CheckCircle, XCircle } from "lucide-react";
+import {
+  UserPlus,
+  Search,
+  Eye,
+  Power,
+  PlusCircle,
+  Users,
+  UserCheck,
+  UserX,
+  Wallet,
+  RotateCcw,
+  X,
+  Phone,
+  MapPin,
+} from "lucide-react";
 import { nasabahService } from "../../services/nasabahService";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
@@ -21,15 +35,29 @@ export const NasabahListPage = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  const hasActiveFilter = Boolean(search || statusFilter || categoryFilter);
+
+  const handleResetFilter = () => {
+    setSearch("");
+    setStatusFilter("");
+    setCategoryFilter("");
+    setPage(1);
+  };
+
   const { data, isLoading } = useQuery({
-    queryKey: ["nasabah-list", { search, status: statusFilter, page, page_size: pageSize }],
+    queryKey: [
+      "nasabah-list",
+      { search, status: statusFilter, category: categoryFilter, page, page_size: pageSize },
+    ],
     queryFn: () =>
       nasabahService.listNasabah({
         search: search || undefined,
         status: statusFilter || undefined,
+        category: categoryFilter || undefined,
         page,
         page_size: pageSize,
       }),
@@ -41,7 +69,9 @@ export const NasabahListPage = () => {
       queryClient.invalidateQueries({ queryKey: ["nasabah-list"] });
       addToast({
         title: "Status Diperbarui",
-        message: `Status nasabah berhasil diubah menjadi ${variables.newStatus}.`,
+        message: `Status nasabah berhasil diubah menjadi ${
+          variables.newStatus === "ACTIVE" ? "Aktif" : "Nonaktif"
+        }.`,
         type: "success",
       });
     },
@@ -56,7 +86,8 @@ export const NasabahListPage = () => {
 
   const handleToggleStatus = (row) => {
     const nextStatus = row.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-    const confirmMsg = `Yakin ingin mengubah status nasabah ${row.name} menjadi ${nextStatus}?`;
+    const nextStatusText = nextStatus === "ACTIVE" ? "mengaktifkan kembali" : "menonaktifkan";
+    const confirmMsg = `Yakin ingin ${nextStatusText} nasabah ${row.name} (${row.customer_id})?`;
     if (window.confirm(confirmMsg)) {
       toggleStatusMutation.mutate({ id: row.id, newStatus: nextStatus });
     }
@@ -66,36 +97,64 @@ export const NasabahListPage = () => {
     {
       title: "ID Nasabah",
       key: "customer_id",
-      render: (val) => <span className="font-mono font-bold text-primary-700">{val}</span>,
+      render: (val) => (
+        <span className="font-mono font-bold text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+          {val}
+        </span>
+      ),
     },
     {
       title: "NIK",
       key: "nik",
-      render: (val) => <span className="font-mono text-gray-600">{val}</span>,
+      render: (val) => <span className="font-mono text-gray-700">{val}</span>,
     },
     {
-      title: "Nama Lengkap",
+      title: "Nama & Domisili",
       key: "name",
       render: (val, row) => (
-        <div>
-          <span className="font-semibold text-gray-900 block">{val}</span>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] font-medium bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">
+        <div className="max-w-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-gray-900 block">{val}</span>
+            <span className="text-[10px] font-medium bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">
               {row.nasabah_category || "Rumah Tangga/Individu"}
             </span>
-            <span className="text-[11px] text-gray-400 truncate max-w-[200px]">{row.address}</span>
+          </div>
+          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+            <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+            <span className="truncate">{row.address}</span>
+            {(row.rt || row.rw) && (
+              <span className="font-medium text-gray-600 shrink-0">
+                • RT {row.rt || "-"}/RW {row.rw || "-"}
+              </span>
+            )}
+            {row.kelurahan && (
+              <span className="text-gray-400 shrink-0">• {row.kelurahan}</span>
+            )}
           </div>
         </div>
       ),
     },
     {
-      title: "No. HP",
+      title: "Kontak",
       key: "phone",
-      render: (val) => <span className="text-gray-600">{val}</span>,
+      render: (val, row) => (
+        <div className="text-xs">
+          <div className="flex items-center gap-1 text-gray-700 font-mono">
+            <Phone className="w-3 h-3 text-gray-400" />
+            <span>{val || "-"}</span>
+          </div>
+          {row.email && (
+            <span className="text-[11px] text-gray-400 block truncate max-w-[150px]">
+              {row.email}
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       title: "Status",
       key: "status",
+      align: "center",
       render: (val) => (
         <Badge variant={val}>
           {val === "ACTIVE" ? "Aktif" : "Nonaktif"}
@@ -103,11 +162,22 @@ export const NasabahListPage = () => {
       ),
     },
     {
-      title: "Saldo Terakhir",
+      title: "Saldo Tabungan",
       key: "balance",
       align: "right",
-      render: (val) => (
-        <span className="font-bold text-gray-900">{formatRupiah(val)}</span>
+      render: (val, row) => (
+        <div className="text-right">
+          <span
+            className={`font-bold font-mono ${
+              Number(val) > 0 ? "text-emerald-700" : "text-gray-900"
+            }`}
+          >
+            {formatRupiah(val)}
+          </span>
+          <span className="text-[10px] text-gray-400 block">
+            {row.transaction_count || 0} transaksi
+          </span>
+        </div>
       ),
     },
     {
@@ -121,14 +191,16 @@ export const NasabahListPage = () => {
             size="xs"
             icon={Eye}
             onClick={() => navigate(`/admin/nasabah/${id}`)}
+            title="Lihat Detail Profil & Mutasi Nasabah"
           >
             Detail
           </Button>
+         
           <Button
             variant={row.status === "ACTIVE" ? "danger" : "success"}
             size="xs"
             onClick={() => handleToggleStatus(row)}
-            title={row.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
+            title={row.status === "ACTIVE" ? "Nonaktifkan Nasabah" : "Aktifkan Kembali Nasabah"}
           >
             <Power className="w-3.5 h-3.5" />
           </Button>
@@ -138,7 +210,7 @@ export const NasabahListPage = () => {
   ];
 
   return (
-    <div>
+    <div className="space-y-4">
       <PageHeader
         title="Daftar Nasabah"
         subtitle="Kelola seluruh data nasabah dan saldo tabungan bank sampah"
@@ -151,11 +223,71 @@ export const NasabahListPage = () => {
         }
       />
 
-      <Card className="mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="sm:col-span-2">
+      {/* Summary Stats Overview */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="p-4 border-l-4 border-l-emerald-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase">Total Nasabah</p>
+              <p className="text-xl font-black text-gray-900 mt-0.5">
+                {data?.summary?.total_all || data?.pagination?.total_items || 0}
+              </p>
+            </div>
+            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+              <Users className="w-5 h-5" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 border-l-4 border-l-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase">Nasabah Aktif</p>
+              <p className="text-xl font-black text-green-700 mt-0.5">
+                {data?.summary?.total_active ?? "-"}
+              </p>
+            </div>
+            <div className="p-2 bg-green-50 rounded-lg text-green-600">
+              <UserCheck className="w-5 h-5" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 border-l-4 border-l-rose-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase">Nasabah Nonaktif</p>
+              <p className="text-xl font-black text-rose-600 mt-0.5">
+                {data?.summary?.total_inactive ?? "-"}
+              </p>
+            </div>
+            <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
+              <UserX className="w-5 h-5" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 border-l-4 border-l-teal-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase">Total Saldo Tabungan</p>
+              <p className="text-lg font-black text-teal-800 mt-0.5 truncate max-w-[160px]">
+                {formatRupiah(data?.summary?.total_balance || 0)}
+              </p>
+            </div>
+            <div className="p-2 bg-teal-50 rounded-lg text-teal-600">
+              <Wallet className="w-5 h-5" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <Card className="p-4 shadow-xs">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div className="md:col-span-6 relative">
             <Input
-              placeholder="Cari berdasarkan nama, NIK, ID Nasabah, atau No. HP..."
+              placeholder="Cari nama, NIK, ID/Rekening, No. HP, alamat, RT/RW..."
               icon={Search}
               value={search}
               onChange={(e) => {
@@ -163,20 +295,64 @@ export const NasabahListPage = () => {
                 setPage(1);
               }}
             />
+            {search && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setPage(1);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                title="Hapus pencarian"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
-          <div>
+
+          <div className="md:col-span-3">
             <Select
-              placeholder="Semua Status"
-              value={statusFilter}
+              placeholder="Semua Kategori"
+              value={categoryFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value);
+                setCategoryFilter(e.target.value);
                 setPage(1);
               }}
               options={[
-                { label: "Aktif (ACTIVE)", value: "ACTIVE" },
-                { label: "Nonaktif (INACTIVE)", value: "INACTIVE" },
+                { label: "Rumah Tangga / Individu", value: "Rumah Tangga/Individu" },
+                { label: "Sekolah", value: "Sekolah" },
+                { label: "Instansi", value: "Instansi" },
               ]}
             />
+          </div>
+
+          <div className="md:col-span-3 flex items-center gap-2">
+            <div className="flex-1">
+              <Select
+                placeholder="Semua Status"
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+                options={[
+                  { label: "Aktif (ACTIVE)", value: "ACTIVE" },
+                  { label: "Nonaktif (INACTIVE)", value: "INACTIVE" },
+                ]}
+              />
+            </div>
+
+            {hasActiveFilter && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={RotateCcw}
+                onClick={handleResetFilter}
+                title="Reset Semua Filter"
+                className="shrink-0"
+              >
+                Reset
+              </Button>
+            )}
           </div>
         </div>
       </Card>
@@ -185,7 +361,11 @@ export const NasabahListPage = () => {
         columns={columns}
         data={data?.items || []}
         isLoading={isLoading}
-        emptyMessage="Tidak ada nasabah yang cocok dengan pencarian."
+        emptyMessage={
+          hasActiveFilter
+            ? "Tidak ada nasabah yang cocok dengan pencarian atau filter yang dipilih."
+            : "Belum ada data nasabah yang terdaftar."
+        }
       />
 
       <Pagination
