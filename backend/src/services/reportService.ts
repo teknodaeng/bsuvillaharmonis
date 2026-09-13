@@ -694,12 +694,13 @@ export class ReportService {
               c.name as category_name,
               p.group_name as price_group_name,
               p.price_code as price_code,
-              SUM(t.weight_gram) as total_weight_gram,
-              SUM(t.credit) as total_amount,
-              COUNT(t.id) as transaction_count
+              SUM(ti.weight_gram) as total_weight_gram,
+              SUM(ti.amount) as total_amount,
+              COUNT(DISTINCT t.id) as transaction_count
        FROM transactions t
-       JOIN waste_categories c ON t.category_id = c.id
-       LEFT JOIN waste_price_masters p ON t.price_id = p.id
+       JOIN transaction_items ti ON ti.transaction_id = t.id
+       JOIN waste_categories c ON ti.category_id = c.id
+       LEFT JOIN waste_price_masters p ON ti.price_id = p.id
        WHERE ${whereClause}
        GROUP BY c.id, c.name, p.group_name, p.price_code
        ORDER BY total_amount DESC`,
@@ -716,7 +717,28 @@ export class ReportService {
 
   private static async getNasabahReportData() {
     const rows = await db.fetchAll<any>(
-      `SELECT * FROM nasabah ORDER BY customer_id ASC`
+      `SELECT 
+         id,
+         customer_id,
+         account_no,
+         CAST(nik AS TEXT) as nik,
+         name,
+         CAST(phone AS TEXT) as phone,
+         address,
+         rt,
+         rw,
+         kelurahan,
+         kecamatan,
+         kabupaten_kota,
+         nasabah_category,
+         email,
+         status,
+         registration_source,
+         created_by,
+         updated_by,
+         created_at,
+         updated_at
+       FROM nasabah ORDER BY customer_id ASC`
     );
     return await Promise.all(
       rows.map(async (r) => ({

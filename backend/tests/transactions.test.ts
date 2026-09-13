@@ -78,6 +78,62 @@ describe('Transactions & Balance Management', () => {
     lastTxId = json.data.id;
   });
 
+  it('POST /api/v1/admin/transactions should record multi-item SETOR and increase balance', async () => {
+    // Get master prices
+    const pricesRes = await app.request('/api/v1/master/waste-prices', {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const pricesJson = await pricesRes.json();
+    const price1 = pricesJson.data.items[0];
+    const price2 = pricesJson.data.items[1] || pricesJson.data.items[0];
+
+    const nasabahRes = await app.request(`/api/v1/admin/nasabah/${nasabahId}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const nasabahJson = (await nasabahRes.json()) as any;
+    const prevBalance = nasabahJson.data.balance;
+
+    const res = await app.request('/api/v1/admin/transactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({
+        nasabah_id: nasabahId,
+        type: 'SETOR',
+        items: [
+          { price_id: price1.id, weight_kg: 2.0 },
+          { price_id: price2.id, weight_kg: 3.5 },
+        ],
+        notes: 'Setor multi-item gabungan',
+      }),
+    });
+
+    const json = await res.json();
+    expect(res.status).toBe(201);
+    expect(json.success).toBe(true);
+    expect(json.data.type).toBe('SETOR');
+    expect(json.data.items).toHaveLength(2);
+    expect(json.data.weight_gram).toBe(5500); // 2.0 + 3.5 kg = 5500 g
+
+    const expectedSubtotal1 = Math.round(2.0 * price1.price_per_kg);
+    const expectedSubtotal2 = Math.round(3.5 * price2.price_per_kg);
+    const expectedTotal = expectedSubtotal1 + expectedSubtotal2;
+
+    expect(json.data.amount).toBe(expectedTotal);
+    expect(json.data.balance_after).toBe(prevBalance + expectedTotal);
+
+    // Test receipt PDF for multi-item
+    const multiTxId = json.data.id;
+    const receiptRes = await app.request(`/api/v1/admin/transactions/${multiTxId}/receipt?format=pdf`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    expect(receiptRes.status).toBe(200);
+    const pdfBuf = await receiptRes.arrayBuffer();
+    expect(pdfBuf.byteLength).toBeGreaterThan(500);
+  }, 25000);
+
   it('POST /api/v1/admin/transactions TARIK with excess amount should fail (Balance Guard)', async () => {
     const res = await app.request('/api/v1/admin/transactions', {
       method: 'POST',

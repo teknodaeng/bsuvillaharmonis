@@ -74,6 +74,7 @@ frontend/dist/
 dist/
 dist-ssr/
 *.local
+backend/*_old/
 
 # Logs
 npm-debug.log*

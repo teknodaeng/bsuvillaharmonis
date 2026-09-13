@@ -92,7 +92,8 @@ export const TransactionListPage = () => {
           <div>
             <span className="font-medium text-gray-800">{row.category?.name || "-"}</span>
             <span className="block text-[11px] text-gray-400">
-              {formatKg(row.weight_gram, true)} ({formatRupiah(row.price_per_kg)}/kg)
+              {formatKg(row.weight_gram, true)}
+              {row.price_per_kg ? ` (${formatRupiah(row.price_per_kg)}/kg)` : ""}
             </span>
           </div>
         ) : (
