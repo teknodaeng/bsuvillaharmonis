@@ -46,12 +46,14 @@ export class TransactionService {
               n.nik as nasabah_nik,
               n.phone as nasabah_phone,
               n.address as nasabah_address,
+              u.name as officer_name,
               c.name as category_name,
               p.group_name as price_group_name,
               p.price_code as price_code,
               p.example_items as price_example_items
        FROM transactions t
        JOIN nasabah n ON t.nasabah_id = n.id
+       LEFT JOIN users u ON t.created_by = u.id
        LEFT JOIN waste_categories c ON t.category_id = c.id
        LEFT JOIN waste_price_masters p ON t.price_id = p.id
        WHERE t.id = ?`,
@@ -62,8 +64,39 @@ export class TransactionService {
       throw new AppError('Transaksi tidak ditemukan.', 404, 'NOT_FOUND');
     }
 
+    const rawItems = await db.fetchAll<any>(
+      `SELECT ti.*,
+              c.name as category_name,
+              p.group_name as price_group_name,
+              p.price_code as price_code
+       FROM transaction_items ti
+       LEFT JOIN waste_categories c ON ti.category_id = c.id
+       LEFT JOIN waste_price_masters p ON ti.price_id = p.id
+       WHERE ti.transaction_id = ?
+       ORDER BY ti.created_at ASC`,
+      [id]
+    );
+
+    const items = rawItems.map((it) => {
+      const groupName = it.price_group_name;
+      const catName = it.category_name || 'Sampah';
+      const displayName = groupName ? `[${groupName}] ${catName}` : catName;
+      return {
+        ...it,
+        weight_kg: it.weight_gram !== null ? it.weight_gram / 1000.0 : null,
+        display_name: displayName,
+      };
+    });
+
     let category = null;
-    if (tx.category_id || tx.price_id) {
+    if (items.length > 1) {
+      category = {
+        id: tx.category_id || '',
+        name: `${items.length} Jenis Sampah`,
+        group_name: 'Campuran',
+        price_code: 'MULTI',
+      };
+    } else if (tx.category_id || tx.price_id) {
       const groupName = tx.price_group_name;
       const catName = tx.category_name || 'Sampah';
       const displayName = groupName ? `[${groupName}] ${catName}` : catName;
@@ -79,6 +112,7 @@ export class TransactionService {
       ...tx,
       weight_kg: tx.weight_gram !== null ? tx.weight_gram / 1000.0 : null,
       category,
+      items,
     };
   }
 
@@ -114,40 +148,116 @@ export class TransactionService {
     let credit: number;
     let debit: number;
 
+    interface ResolvedItem {
+      categoryId: string | null;
+      priceId: string | null;
+      weightGram: number;
+      pricePerKg: number;
+      amount: number;
+    }
+    const resolvedItems: ResolvedItem[] = [];
+
     if (data.type === 'SETOR') {
-      if (data.price_id) {
-        const priceRec = await priceService.getPriceById(data.price_id);
-        if (priceRec.status !== 'ACTIVE') {
+      if (data.items && data.items.length > 0) {
+        let totalWeightGram = 0;
+        let totalCredit = 0;
+
+        for (const it of data.items) {
+          if (!it.price_id && !it.category_id) {
+            throw new AppError('Kelompok atau tarif sampah wajib dipilih.', 400, 'PRICE_REQUIRED');
+          }
+          let pPerKg = 0;
+          let cId = '';
+          let pId = '';
+
+          if (it.price_id) {
+            const priceRec = await priceService.getPriceById(it.price_id);
+            if (priceRec.status !== 'ACTIVE') {
+              throw new AppError(
+                `Master harga sampah (${priceRec.group_name ? `[${priceRec.group_name}] ` : ''}${priceRec.category_name || ''}) sedang tidak aktif.`,
+                400,
+                'PRICE_INACTIVE'
+              );
+            }
+            pPerKg = Number(priceRec.price_per_kg);
+            cId = priceRec.category_id;
+            pId = priceRec.id;
+          } else if (it.category_id) {
+            const activePrice = await priceService.getActivePriceByCategory(it.category_id);
+            pPerKg = Number(activePrice.price_per_kg);
+            cId = it.category_id;
+            pId = activePrice.id;
+          }
+
+          if (!it.weight_kg || it.weight_kg <= 0) {
+            throw new AppError('Berat sampah per jenis harus lebih dari 0 kg.', 400, 'INVALID_WEIGHT');
+          }
+
+          const wGram = Math.round(it.weight_kg * 1000);
+          const subtotal = Math.round(it.weight_kg * pPerKg);
+          totalWeightGram += wGram;
+          totalCredit += subtotal;
+
+          resolvedItems.push({
+            categoryId: cId,
+            priceId: pId,
+            weightGram: wGram,
+            pricePerKg: pPerKg,
+            amount: subtotal,
+          });
+        }
+
+        weightGram = totalWeightGram;
+        amount = totalCredit;
+        credit = totalCredit;
+        debit = 0;
+        categoryId = resolvedItems.length === 1 ? resolvedItems[0].categoryId : null;
+        priceId = resolvedItems.length === 1 ? resolvedItems[0].priceId : null;
+        pricePerKg = resolvedItems.length === 1 ? resolvedItems[0].pricePerKg : null;
+      } else {
+        // Fallback backward compatibility for single-item payload
+        if (data.price_id) {
+          const priceRec = await priceService.getPriceById(data.price_id);
+          if (priceRec.status !== 'ACTIVE') {
+            throw new AppError(
+              'Master harga sampah yang dipilih sedang tidak aktif.',
+              400,
+              'PRICE_INACTIVE'
+            );
+          }
+          pricePerKg = Number(priceRec.price_per_kg);
+          categoryId = priceRec.category_id;
+          priceId = priceRec.id;
+        } else if (data.category_id) {
+          const activePrice = await priceService.getActivePriceByCategory(data.category_id);
+          pricePerKg = Number(activePrice.price_per_kg);
+          categoryId = data.category_id;
+          priceId = activePrice.id;
+        } else {
           throw new AppError(
-            'Master harga sampah yang dipilih sedang tidak aktif.',
+            'Kelompok sampah atau harga sampah wajib dipilih untuk transaksi SETOR.',
             400,
-            'PRICE_INACTIVE'
+            'PRICE_REQUIRED'
           );
         }
-        pricePerKg = Number(priceRec.price_per_kg);
-        categoryId = priceRec.category_id;
-        priceId = priceRec.id;
-      } else if (data.category_id) {
-        const activePrice = await priceService.getActivePriceByCategory(data.category_id);
-        pricePerKg = Number(activePrice.price_per_kg);
-        categoryId = data.category_id;
-        priceId = activePrice.id;
-      } else {
-        throw new AppError(
-          'Kelompok sampah atau harga sampah wajib dipilih untuk transaksi SETOR.',
-          400,
-          'PRICE_REQUIRED'
-        );
-      }
 
-      if (!data.weight_kg || data.weight_kg <= 0) {
-        throw new AppError('Berat sampah harus lebih dari 0 kg.', 400, 'INVALID_WEIGHT');
-      }
+        if (!data.weight_kg || data.weight_kg <= 0) {
+          throw new AppError('Berat sampah harus lebih dari 0 kg.', 400, 'INVALID_WEIGHT');
+        }
 
-      weightGram = Math.round(data.weight_kg * 1000);
-      amount = Math.round(data.weight_kg * pricePerKg);
-      credit = amount;
-      debit = 0;
+        weightGram = Math.round(data.weight_kg * 1000);
+        amount = Math.round(data.weight_kg * pricePerKg);
+        credit = amount;
+        debit = 0;
+
+        resolvedItems.push({
+          categoryId,
+          priceId,
+          weightGram,
+          pricePerKg,
+          amount,
+        });
+      }
     } else if (data.type === 'TARIK') {
       if (!data.amount || data.amount <= 0) {
         throw new AppError('Nominal tarik tunai harus lebih dari 0.', 400, 'INVALID_AMOUNT');
@@ -204,6 +314,18 @@ export class TransactionService {
           creatorId || 'ADMIN',
         ],
       });
+
+      if (data.type === 'SETOR' && resolvedItems.length > 0) {
+        for (const it of resolvedItems) {
+          const itemId = uuidv4();
+          await tx.execute({
+            sql: `INSERT INTO transaction_items (
+              id, transaction_id, category_id, price_id, weight_gram, price_per_kg, amount, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+            args: [itemId, txId, it.categoryId, it.priceId, it.weightGram, it.pricePerKg, it.amount],
+          });
+        }
+      }
     });
 
     return await this.getTransactionById(txId);
@@ -247,16 +369,16 @@ export class TransactionService {
     }
 
     if (params.category_id) {
-      conditions.push('t.category_id = ?');
-      args.push(params.category_id);
+      conditions.push('(t.category_id = ? OR EXISTS (SELECT 1 FROM transaction_items ti WHERE ti.transaction_id = t.id AND ti.category_id = ?))');
+      args.push(params.category_id, params.category_id);
     }
 
     if (params.search) {
       const s = `%${params.search.trim()}%`;
       conditions.push(
-        '(t.transaction_no LIKE ? OR n.name LIKE ? OR n.customer_id LIKE ? OR n.nik LIKE ? OR p.group_name LIKE ? OR c.name LIKE ?)'
+        '(t.transaction_no LIKE ? OR n.name LIKE ? OR n.customer_id LIKE ? OR n.nik LIKE ? OR p.group_name LIKE ? OR c.name LIKE ? OR EXISTS (SELECT 1 FROM transaction_items ti2 JOIN waste_categories c2 ON ti2.category_id = c2.id WHERE ti2.transaction_id = t.id AND c2.name LIKE ?))'
       );
-      args.push(s, s, s, s, s, s);
+      args.push(s, s, s, s, s, s, s);
     }
 
     const whereClause = conditions.join(' AND ');
@@ -280,7 +402,8 @@ export class TransactionService {
               n.nik as nasabah_nik,
               c.name as category_name,
               p.group_name as price_group_name,
-              p.price_code as price_code
+              p.price_code as price_code,
+              (SELECT COUNT(*) FROM transaction_items ti WHERE ti.transaction_id = t.id) as items_count
        FROM transactions t
        JOIN nasabah n ON t.nasabah_id = n.id
        LEFT JOIN waste_categories c ON t.category_id = c.id
@@ -293,7 +416,16 @@ export class TransactionService {
 
     const items = rows.map((row) => {
       let category = null;
-      if (row.category_id || row.price_id) {
+      const itemsCount = Number(row.items_count || 0);
+
+      if (itemsCount > 1) {
+        category = {
+          id: row.category_id || '',
+          name: `${itemsCount} Jenis Sampah`,
+          group_name: 'Campuran',
+          price_code: 'MULTI',
+        };
+      } else if (row.category_id || row.price_id) {
         const groupName = row.price_group_name;
         const catName = row.category_name || 'Sampah';
         const displayName = groupName ? `[${groupName}] ${catName}` : catName;
