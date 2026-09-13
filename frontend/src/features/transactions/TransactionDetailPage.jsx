@@ -85,7 +85,56 @@ export const TransactionDetailPage = () => {
             <p className="font-semibold text-gray-900 mt-0.5">{tx.nasabah_name}</p>
           </div>
 
-          {tx.type === "SETOR" && (
+          {tx.type === "SETOR" && tx.items && tx.items.length > 0 ? (
+            <div className="col-span-2 pt-2 border-t border-gray-100">
+              <span className="text-xs font-bold text-gray-700 block mb-2">
+                Rincian Sampah Disetor ({tx.items.length} Jenis):
+              </span>
+              <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold">
+                    <tr>
+                      <th className="py-2 px-3 w-8 text-center">No</th>
+                      <th className="py-2 px-3">Kelompok / Jenis Sampah</th>
+                      <th className="py-2 px-3 text-right">Tarif / kg</th>
+                      <th className="py-2 px-3 text-right">Berat</th>
+                      <th className="py-2 px-3 text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {tx.items.map((it, idx) => (
+                      <tr key={it.id || idx} className="hover:bg-gray-50/60">
+                        <td className="py-2 px-3 text-center text-gray-400">{idx + 1}</td>
+                        <td className="py-2 px-3 font-semibold text-gray-800">
+                          {it.display_name || it.category_name || "-"}
+                        </td>
+                        <td className="py-2 px-3 text-right text-gray-600">
+                          {formatRupiah(it.price_per_kg)}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono text-gray-700">
+                          {formatKg(it.weight_gram, true)}
+                        </td>
+                        <td className="py-2 px-3 text-right font-bold text-emerald-700">
+                          {formatRupiah(it.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-emerald-50/50 font-bold border-t border-gray-200 text-gray-900">
+                    <tr>
+                      <td colSpan={3} className="py-2 px-3 text-gray-700">Total Keseluruhan:</td>
+                      <td className="py-2 px-3 text-right font-mono text-emerald-800">
+                        {formatKg(tx.weight_gram, true)}
+                      </td>
+                      <td className="py-2 px-3 text-right text-emerald-800">
+                        {formatRupiah(tx.amount)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          ) : tx.type === "SETOR" ? (
             <>
               <div>
                 <span className="text-gray-400 font-medium">Kelompok Sampah:</span>
@@ -106,7 +155,7 @@ export const TransactionDetailPage = () => {
                 </p>
               </div>
             </>
-          )}
+          ) : null}
 
           <div>
             <span className="text-gray-400 font-medium">Saldo Akhir Nasabah:</span>

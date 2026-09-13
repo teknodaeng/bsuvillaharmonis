@@ -10,8 +10,19 @@
 
 /* Print CSS */
 @media print {
-  body {
-    background: transparent !important;
+  @page {
+    size: auto;
+    margin: 6mm 8mm;
+  }
+
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #111827 !important;
     padding: 0 !important;
     margin: 0 !important;
   }
@@ -22,11 +33,24 @@
 
   .print-area {
     display: block !important;
+    max-width: 440px !important;
     width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0 auto !important;
+    padding: 18px 22px !important;
     box-shadow: none !important;
-    border: none !important;
+    border: 1px dashed #9ca3af !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-area .text-gray-400 {
+    color: #4b5563 !important;
+  }
+
+  .print-area .text-gray-500 {
+    color: #374151 !important;
   }
 }
 

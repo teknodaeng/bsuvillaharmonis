@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   Printer,
   User,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { nasabahService } from "../../services/nasabahService";
 import { priceService } from "../../services/priceService";
@@ -38,9 +40,10 @@ export const TransactionCreatePage = () => {
     location.state?.nasabahId ? String(location.state.nasabahId) : ""
   );
 
-  // SETOR States
-  const [selectedPriceId, setSelectedPriceId] = useState("");
-  const [weightKg, setWeightKg] = useState("");
+  // SETOR Multi-Items State
+  const [setorItems, setSetorItems] = useState([
+    { id: 1, price_id: "", weight_kg: "" },
+  ]);
   const [setorNotes, setSetorNotes] = useState("");
 
   // TARIK States
@@ -94,6 +97,24 @@ export const TransactionCreatePage = () => {
     );
   }, [priceData]);
 
+  const priceOptions = useMemo(() => {
+    return activePrices.map((p) => {
+      const groupPrefix = p.group_name ? `[${p.group_name}] ` : "";
+      const catName = p.category_name || "Sampah";
+      const formattedPrice = `${formatRupiah(p.price_per_kg)}/kg`;
+      return {
+        label: `${groupPrefix}${catName} (${formattedPrice})`,
+        value: String(p.id),
+        group: p.group_name || "",
+        name: catName,
+        code: p.price_code || "",
+        exampleItems: p.example_items || "",
+        price: p.price_per_kg,
+        formattedPrice,
+      };
+    });
+  }, [activePrices]);
+
   // Fetch Selected Nasabah Detail for Live Balance
   const { data: selectedNasabah } = useQuery({
     queryKey: ["nasabah-balance-check", selectedNasabahId],
@@ -101,30 +122,69 @@ export const TransactionCreatePage = () => {
     enabled: !!selectedNasabahId,
   });
 
-  // Selected Price Master Object
-  const selectedPrice = activePrices.find(
-    (p) => String(p.id) === selectedPriceId
-  );
-  const selectedCategoryId = selectedPrice?.category_id || "";
-  const activePricePerKg = selectedPrice?.price_per_kg || 0;
+  // Automatically select first active price master if available
+  useEffect(() => {
+    if (activePrices.length > 0) {
+      setSetorItems((prev) =>
+        prev.map((item) =>
+          item.price_id ? item : { ...item, price_id: String(activePrices[0].id) }
+        )
+      );
+    }
+  }, [activePrices]);
+
+  // Multi-item handlers
+  const handleAddItem = () => {
+    const defaultPriceId = activePrices.length > 0 ? String(activePrices[0].id) : "";
+    setSetorItems((prev) => [
+      ...prev,
+      { id: Date.now() + Math.random(), price_id: defaultPriceId, weight_kg: "" },
+    ]);
+  };
+
+  const handleRemoveItem = (id) => {
+    if (setorItems.length <= 1) return;
+    setSetorItems((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  const handleUpdateItem = (id, field, value) => {
+    setSetorItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, [field]: value } : it))
+    );
+  };
 
   // Calculations for Setor
-  const numericWeight = parseFloat(weightKg) || 0;
-  const calculatedCredit = Math.round(numericWeight * activePricePerKg);
+  const calculatedItems = useMemo(() => {
+    return setorItems.map((it) => {
+      const priceObj = activePrices.find((p) => String(p.id) === String(it.price_id));
+      const rate = priceObj?.price_per_kg || 0;
+      const weight = parseFloat(it.weight_kg) || 0;
+      const subtotal = Math.round(weight * rate);
+      return {
+        ...it,
+        priceObj,
+        rate,
+        weight,
+        subtotal,
+      };
+    });
+  }, [setorItems, activePrices]);
+
+  const totalWeightKg = useMemo(
+    () => calculatedItems.reduce((acc, it) => acc + it.weight, 0),
+    [calculatedItems]
+  );
+  const totalCalculatedCredit = useMemo(
+    () => calculatedItems.reduce((acc, it) => acc + it.subtotal, 0),
+    [calculatedItems]
+  );
   const currentBalance = selectedNasabah?.balance || 0;
-  const projectedBalanceSetor = currentBalance + calculatedCredit;
+  const projectedBalanceSetor = currentBalance + totalCalculatedCredit;
 
   // Calculations for Tarik
   const numericWithdraw = parseInt(withdrawAmount) || 0;
   const projectedBalanceTarik = currentBalance - numericWithdraw;
   const isWithdrawExceeded = numericWithdraw > currentBalance;
-
-  // Automatically select first active price master if available
-  useEffect(() => {
-    if (activePrices.length > 0 && !selectedPriceId) {
-      setSelectedPriceId(String(activePrices[0].id));
-    }
-  }, [activePrices, selectedPriceId]);
 
   const createTxMutation = useMutation({
     mutationFn: (payload) => transactionService.createTransaction(payload),
@@ -156,25 +216,31 @@ export const TransactionCreatePage = () => {
       setErrorMessage("Silakan pilih nasabah terlebih dahulu.");
       return;
     }
-    if (!selectedPrice || !selectedCategoryId) {
-      setErrorMessage("Silakan pilih kelompok sampah (harga sampah).");
+    if (setorItems.length === 0) {
+      setErrorMessage("Minimal harus ada 1 jenis sampah yang disetor.");
       return;
     }
-    if (numericWeight <= 0) {
-      setErrorMessage("Berat sampah harus lebih besar dari 0 kg.");
-      return;
-    }
-    if (activePricePerKg <= 0) {
-      setErrorMessage("Kelompok harga sampah ini belum memiliki tarif aktif.");
-      return;
+
+    for (let i = 0; i < setorItems.length; i++) {
+      const it = setorItems[i];
+      if (!it.price_id) {
+        setErrorMessage(`Baris ke-${i + 1}: Silakan pilih kelompok & tarif sampah.`);
+        return;
+      }
+      const w = parseFloat(it.weight_kg);
+      if (isNaN(w) || w <= 0) {
+        setErrorMessage(`Baris ke-${i + 1}: Berat sampah harus lebih besar dari 0 kg.`);
+        return;
+      }
     }
 
     createTxMutation.mutate({
       nasabah_id: String(selectedNasabahId),
       type: "SETOR",
-      price_id: String(selectedPriceId),
-      category_id: String(selectedCategoryId),
-      weight_kg: numericWeight,
+      items: setorItems.map((it) => ({
+        price_id: String(it.price_id),
+        weight_kg: parseFloat(it.weight_kg),
+      })),
       notes: setorNotes || null,
     });
   };
@@ -323,59 +389,103 @@ export const TransactionCreatePage = () => {
         <form onSubmit={handleSetorSubmit}>
           <Card
             title="2. Rincian Setor Sampah"
-            subtitle="Pilih kelompok harga sampah yang aktif dan masukkan berat timbangan"
+            subtitle="Tambahkan satu atau lebih jenis sampah yang disetorkan oleh nasabah"
             bodyClassName="space-y-4"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <AutocompleteSelect
-                label="Kelompok Sampah(Harga Sampah)"
-                placeholder={
-                  isPricesLoading
-                    ? "Memuat master harga sampah..."
-                    : activePrices.length === 0
-                    ? "Tidak ada master harga sampah yang aktif"
-                    : "Ketik untuk cari kelompok / harga sampah..."
-                }
-                value={selectedPriceId}
-                onChange={(val) => setSelectedPriceId(val)}
-                required
-                helperText={
-                  activePrices.length === 0 && !isPricesLoading
-                    ? "Belum ada master harga sampah yang aktif. Silakan tetapkan harga di Master Harga Sampah."
-                    : selectedPrice?.example_items
-                    ? `Contoh: ${selectedPrice.example_items}`
-                    : undefined
-                }
-                options={
-                  activePrices.map((p) => {
-                    const groupPrefix = p.group_name ? `[${p.group_name}] ` : "";
-                    const catName = p.category_name || "Sampah";
-                    const formattedPrice = `${formatRupiah(p.price_per_kg)}/kg`;
-                    return {
-                      label: `${groupPrefix}${catName} (${formattedPrice})`,
-                      value: String(p.id),
-                      group: p.group_name || "",
-                      name: catName,
-                      code: p.price_code || "",
-                      exampleItems: p.example_items || "",
-                      price: p.price_per_kg,
-                      formattedPrice,
-                    };
-                  })
-                }
-              />
+            {/* List of Setor Items */}
+            <div className="space-y-3">
+              {setorItems.map((item, index) => {
+                const calculated = calculatedItems.find((c) => c.id === item.id);
+                return (
+                  <div
+                    key={item.id}
+                    className="p-3.5 rounded-xl border border-gray-200/80 bg-gray-50/50 hover:bg-white transition-all space-y-3"
+                  >
+                    <div className="flex items-center justify-between border-b border-gray-200/60 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="text-xs font-bold text-gray-800">
+                          Jenis Sampah #{index + 1}
+                        </span>
+                      </div>
 
-              <Input
-                label="Berat Timbangan (Kilogram / kg)"
-                type="number"
-                step="0.001"
-                min="0.001"
-                placeholder="Contoh: 2.500 atau 0.850"
-                value={weightKg}
-                onChange={(e) => setWeightKg(e.target.value)}
-                required
-                helperText="Dapat diisi hingga 3 desimal (contoh: 1.250 kg)"
-              />
+                      <div className="flex items-center gap-2">
+                        {calculated && calculated.subtotal > 0 && (
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                            Subtotal: {formatRupiah(calculated.subtotal)}
+                          </span>
+                        )}
+                        {setorItems.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Hapus baris sampah ini"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <AutocompleteSelect
+                        label="Kelompok Sampah (Harga Sampah)"
+                        placeholder={
+                          isPricesLoading
+                            ? "Memuat master harga..."
+                            : priceOptions.length === 0
+                            ? "Tidak ada master harga aktif"
+                            : "Pilih / cari kelompok sampah..."
+                        }
+                        value={item.price_id}
+                        onChange={(val) => handleUpdateItem(item.id, "price_id", val)}
+                        required
+                        helperText={
+                          calculated?.priceObj?.example_items
+                            ? `Contoh: ${calculated.priceObj.example_items}`
+                            : undefined
+                        }
+                        options={priceOptions}
+                      />
+
+                      <div>
+                        <Input
+                          label="Berat Timbangan (Kilogram / kg)"
+                          type="number"
+                          step="0.001"
+                          min="0.001"
+                          placeholder="Contoh: 2.500 atau 0.850"
+                          value={item.weight_kg}
+                          onChange={(e) => handleUpdateItem(item.id, "weight_kg", e.target.value)}
+                          required
+                          helperText={
+                            calculated?.rate
+                              ? `Tarif: ${formatRupiah(calculated.rate)}/kg`
+                              : "Dapat diisi hingga 3 desimal (contoh: 1.250 kg)"
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add More Items Button */}
+            <div className="pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddItem}
+                icon={Plus}
+                className="w-full sm:w-auto border-dashed border-emerald-400 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-500 font-semibold"
+              >
+                Tambah Jenis / Kelompok Sampah Lain
+              </Button>
             </div>
 
             <Textarea
@@ -388,32 +498,68 @@ export const TransactionCreatePage = () => {
 
             {/* Calculation Preview Box */}
             <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
-              <div className="flex items-center gap-2 font-bold text-xs text-emerald-900 mb-2">
-                <Calculator className="w-4 h-4" />
-                <span>Kalkulasi Otomatis Setoran</span>
+              <div className="flex items-center justify-between font-bold text-xs text-emerald-900 mb-2">
+                <div className="flex items-center gap-2">
+                  <Calculator className="w-4 h-4" />
+                  <span>Kalkulasi Otomatis Setoran</span>
+                </div>
+                {setorItems.length > 1 && (
+                  <span className="bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded text-[11px] font-bold">
+                    {setorItems.length} Kelompok Berbeda
+                  </span>
+                )}
               </div>
+
+              {/* Mini breakdown table if multiple items */}
+              {calculatedItems.length > 1 && (
+                <div className="mb-3 bg-white/70 rounded-lg p-2.5 border border-emerald-200/60 overflow-x-auto text-[11px]">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-emerald-200/80 text-emerald-900 font-bold">
+                        <th className="pb-1 w-6">#</th>
+                        <th className="pb-1">Jenis Sampah</th>
+                        <th className="pb-1 text-right">Tarif</th>
+                        <th className="pb-1 text-right">Berat</th>
+                        <th className="pb-1 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-emerald-100">
+                      {calculatedItems.map((it, idx) => (
+                        <tr key={it.id}>
+                          <td className="py-1 text-gray-500">{idx + 1}</td>
+                          <td className="py-1 font-semibold text-gray-800 truncate max-w-[160px]">
+                            {it.priceObj?.category_name || "-"}
+                          </td>
+                          <td className="py-1 text-right text-gray-600">{formatRupiah(it.rate)}</td>
+                          <td className="py-1 text-right font-mono text-gray-700">{formatKg(it.weight, false)}</td>
+                          <td className="py-1 text-right font-bold text-emerald-700">{formatRupiah(it.subtotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <span className="text-gray-500">Kelompok / Tarif:</span>
+                  <span className="text-gray-500">Rincian Jenis:</span>
                   <p className="font-semibold text-gray-900 truncate">
-                    {selectedPrice
-                      ? `${selectedPrice.group_name ? `[${selectedPrice.group_name}] ` : ""}${selectedPrice.category_name}`
-                      : "-"}
+                    {calculatedItems.length} Jenis Sampah
                   </p>
                   <p className="text-[11px] text-emerald-700 font-bold mt-0.5">
-                    {formatRupiah(activePricePerKg)} / kg
+                    {setorItems.length > 1 ? "Multi-Kelompok" : calculatedItems[0]?.priceObj?.category_name || "-"}
                   </p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Berat Diinput:</span>
+                  <span className="text-gray-500">Total Berat:</span>
                   <p className="font-semibold text-gray-900">
-                    {formatKg(numericWeight)}
+                    {formatKg(totalWeightKg, false)}
                   </p>
                 </div>
                 <div>
                   <span className="text-gray-500">Tambahan Saldo:</span>
                   <p className="font-extrabold text-emerald-700 text-sm">
-                    +{formatRupiah(calculatedCredit)}
+                    +{formatRupiah(totalCalculatedCredit)}
                   </p>
                 </div>
                 <div>

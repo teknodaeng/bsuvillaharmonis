@@ -137,10 +137,60 @@ CREATE INDEX IF NOT EXISTS idx_trx_type ON transactions(type);
 CREATE INDEX IF NOT EXISTS idx_trx_category ON transactions(category_id);
 CREATE INDEX IF NOT EXISTS idx_trx_price ON transactions(price_id);
 CREATE INDEX IF NOT EXISTS idx_trx_no ON transactions(transaction_no);
+
+CREATE TABLE IF NOT EXISTS transaction_items (
+    id TEXT PRIMARY KEY,
+    transaction_id TEXT NOT NULL,
+    category_id TEXT NOT NULL,
+    price_id TEXT NOT NULL,
+    weight_gram INTEGER NOT NULL,
+    price_per_kg INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES waste_categories(id),
+    FOREIGN KEY (price_id) REFERENCES waste_price_masters(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_trx_items_trx ON transaction_items(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_trx_items_category ON transaction_items(category_id);
+CREATE INDEX IF NOT EXISTS idx_trx_items_price ON transaction_items(price_id);
 `;
 
 export async function runMigrations() {
   console.log('[DB] Menjalankan migrasi database...');
   await db.executeMultiple(DDL_SCRIPT);
+
+  // Auto-backfill single-item SETOR transactions to transaction_items if not yet present
+  try {
+    await db.execute(`
+      INSERT INTO transaction_items (id, transaction_id, category_id, price_id, weight_gram, price_per_kg, amount, created_at)
+      SELECT 
+        'backfill_' || id,
+        id,
+        category_id,
+        price_id,
+        weight_gram,
+        price_per_kg,
+        amount,
+        COALESCE(created_at, datetime('now'))
+      FROM transactions
+      WHERE type = 'SETOR'
+        AND category_id IS NOT NULL
+        AND price_id IS NOT NULL
+        AND id NOT IN (SELECT DISTINCT transaction_id FROM transaction_items)
+    `);
+  } catch (err) {
+    console.warn('[DB] Catatan migrasi backfill transaction_items:', err);
+  }
+
+  // Normalize any nasabah nik and phone stored as integers to TEXT
+  try {
+    await db.execute(`UPDATE nasabah SET nik = CAST(nik AS TEXT) WHERE typeof(nik) = 'integer'`);
+    await db.execute(`UPDATE nasabah SET phone = CAST(phone AS TEXT) WHERE typeof(phone) = 'integer'`);
+  } catch (err) {
+    console.warn('[DB] Catatan migrasi normalisasi tipe teks nasabah:', err);
+  }
+
   console.log('[DB] Migrasi database berhasil dijalankan.');
 }

@@ -1,13 +1,13 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Printer, Download, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Printer, Download, ArrowLeft } from "lucide-react";
 import { receiptService } from "../../services/receiptService";
 import { useAuthStore } from "../../stores/authStore";
 import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
 import { Spinner } from "../../components/ui/Spinner";
-import { downloadBlob } from "../../utils/formatting";
+import { downloadBlob, formatKg } from "../../utils/formatting";
+import { formatRupiah } from "../../utils/currency";
 
 export const ReceiptPage = () => {
   const { transactionId } = useParams();
@@ -158,30 +158,56 @@ export const ReceiptPage = () => {
             </span>
           </div>
 
-          {receipt.type === "SETOR" ? (
+          {receipt.type === "SETOR" && receipt.items && receipt.items.length > 0 ? (
+            <div className="bg-gray-50 rounded-xl p-3 text-xs space-y-2 font-mono divide-y divide-gray-200/60">
+              {receipt.items.map((it, idx) => (
+                <div key={it.id || idx} className={idx > 0 ? "pt-2" : ""}>
+                  <div className="flex justify-between font-bold text-gray-900">
+                    <span>{idx + 1}. {it.display_name || it.category_name || "Sampah"}</span>
+                    <span className="text-emerald-700 font-extrabold">{formatRupiah(it.amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] text-gray-500 mt-0.5">
+                    <span>{formatKg(it.weight_gram, true)} × {formatRupiah(it.price_per_kg)}/kg</span>
+                  </div>
+                </div>
+              ))}
+              <div className="pt-2 flex justify-between text-xs font-bold text-gray-700">
+                <span>Total Berat:</span>
+                <span>{receipt.detail?.weight_formatted || formatKg(receipt.weight_gram, true)}</span>
+              </div>
+            </div>
+          ) : receipt.type === "SETOR" ? (
             <div className="bg-gray-50 rounded-xl p-3 text-xs space-y-1.5 font-mono">
               <div className="flex justify-between">
                 <span className="text-gray-500">Kategori:</span>
                 <span className="font-semibold text-gray-900">
-                  {receipt.detail?.category_name || receipt.category_name}
+                  {receipt.detail?.category_name || receipt.category_name || "-"}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Berat Timbangan:</span>
                 <span className="font-bold text-gray-900">
-                  {receipt.detail?.weight_formatted || receipt.weight_formatted}
+                  {receipt.detail?.weight_formatted || formatKg(receipt.weight_gram, true)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Tarif Satuan:</span>
                 <span className="text-gray-900">
-                  {receipt.detail?.price_formatted || receipt.price_per_kg_formatted}
+                  {receipt.detail?.price_formatted || (receipt.price_per_kg ? `${formatRupiah(receipt.price_per_kg)}/kg` : "-")}
                 </span>
               </div>
             </div>
           ) : (
             <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-600 font-mono">
               Penarikan saldo tabungan secara tunai melalui petugas loket.
+            </div>
+          )}
+
+          {/* Catatan Transaksi (if any) */}
+          {receipt.notes && receipt.notes !== "-" && (
+            <div className="mt-2.5 pt-2 border-t border-dashed border-gray-200 text-xs flex justify-between font-mono">
+              <span className="text-gray-400">Catatan:</span>
+              <span className="text-gray-700 italic text-right max-w-[220px]">{receipt.notes}</span>
             </div>
           )}
 
@@ -195,8 +221,8 @@ export const ReceiptPage = () => {
               }`}
             >
               {receipt.type === "SETOR"
-                ? `+${receipt.mutation?.credit_formatted || receipt.amount_formatted}`
-                : `-${receipt.mutation?.debit_formatted || receipt.amount_formatted}`}
+                ? `+${receipt.mutation?.credit_formatted || receipt.amount_formatted || formatRupiah(receipt.amount)}`
+                : `-${receipt.mutation?.debit_formatted || receipt.amount_formatted || formatRupiah(receipt.amount)}`}
             </span>
           </div>
         </div>
@@ -206,7 +232,7 @@ export const ReceiptPage = () => {
           <div className="flex justify-between font-bold">
             <span className="text-gray-900">Saldo Akhir Saat Ini:</span>
             <span className="text-emerald-800 text-sm">
-              {receipt.mutation?.balance_after_formatted || receipt.balance_after_formatted}
+              {receipt.mutation?.balance_after_formatted || receipt.balance_after_formatted || formatRupiah(receipt.balance_after)}
             </span>
           </div>
         </div>
@@ -217,12 +243,12 @@ export const ReceiptPage = () => {
             "{receipt.footer || receipt.footer_text || "Terima kasih telah menjaga kebersihan lingkungan bersama kami."}"
           </p>
 
-          <div className="grid grid-cols-2 gap-4 text-center text-[11px] text-gray-500 font-mono pt-4">
+          <div className="grid grid-cols-2 gap-4 text-center text-[11px] text-gray-500 font-mono pt-2">
             <div>
               <p>Nasabah,</p>
               <div className="h-12"></div>
               <p className="border-t border-gray-300 pt-1 font-semibold text-gray-700 truncate">
-                {receipt.nasabah?.name || receipt.nasabah_name}
+                {receipt.nasabah?.name || receipt.nasabah_name || "-"}
               </p>
             </div>
             <div>
@@ -233,6 +259,12 @@ export const ReceiptPage = () => {
               </p>
             </div>
           </div>
+
+          {receipt.printed_at && (
+            <p className="text-[9px] text-gray-400 mt-5 font-mono">
+              Waktu Cetak: {receipt.printed_at}
+            </p>
+          )}
         </div>
       </div>
     </div>
