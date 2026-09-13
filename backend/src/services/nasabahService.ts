@@ -134,7 +134,7 @@ export class NasabahService {
     page_size?: number;
   }) {
     const page = Math.max(1, Number(params.page) || 1);
-    const pageSize = Math.max(1, Math.min(100, Number(params.page_size) || 10));
+    const pageSize = Math.max(1, Math.min(500, Number(params.page_size) || 10));
     const offset = (page - 1) * pageSize;
 
     const conditions: string[] = [];
@@ -143,9 +143,9 @@ export class NasabahService {
     if (params.search) {
       const s = `%${params.search.trim()}%`;
       conditions.push(
-        '(name LIKE ? OR nik LIKE ? OR customer_id LIKE ? OR phone LIKE ? OR kelurahan LIKE ? OR kecamatan LIKE ?)'
+        '(name LIKE ? OR nik LIKE ? OR customer_id LIKE ? OR account_no LIKE ? OR phone LIKE ? OR address LIKE ? OR rt LIKE ? OR rw LIKE ? OR kelurahan LIKE ? OR kecamatan LIKE ? OR email LIKE ?)'
       );
-      args.push(s, s, s, s, s, s);
+      args.push(s, s, s, s, s, s, s, s, s, s, s);
     }
 
     if (params.status) {
@@ -168,19 +168,31 @@ export class NasabahService {
     const totalPages = Math.ceil(totalItems / pageSize);
 
     const rows = await db.fetchAll<any>(
-      `SELECT * FROM nasabah ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT n.*,
+              CAST(n.nik AS TEXT) as nik,
+              CAST(n.phone AS TEXT) as phone,
+              COALESCE((SELECT SUM(t.credit) - SUM(t.debit) FROM transactions t WHERE t.nasabah_id = n.id), 0) as balance,
+              COALESCE((SELECT COUNT(*) FROM transactions t WHERE t.nasabah_id = n.id), 0) as transaction_count
+       FROM nasabah n
+       ${whereClause}
+       ORDER BY n.created_at DESC
+       LIMIT ? OFFSET ?`,
       [...args, pageSize, offset]
     );
 
-    // Calculate balances for each nasabah
-    const items = await Promise.all(
-      rows.map(async (row) => {
-        const balance = await this.getNasabahBalance(row.id);
-        return {
-          ...row,
-          balance,
-        };
-      })
+    const items = rows.map((row) => ({
+      ...row,
+      balance: Number(row.balance || 0),
+      transaction_count: Number(row.transaction_count || 0),
+    }));
+
+    const statsRow = await db.fetchOne<any>(
+      `SELECT 
+        COUNT(*) as total_all,
+        COALESCE(SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END), 0) as total_active,
+        COALESCE(SUM(CASE WHEN status = 'INACTIVE' THEN 1 ELSE 0 END), 0) as total_inactive,
+        COALESCE((SELECT SUM(credit) - SUM(debit) FROM transactions), 0) as total_balance
+       FROM nasabah`
     );
 
     return {
@@ -191,12 +203,22 @@ export class NasabahService {
         total_items: totalItems,
         total_pages: totalPages,
       },
+      summary: {
+        total_all: Number(statsRow?.total_all || 0),
+        total_active: Number(statsRow?.total_active || 0),
+        total_inactive: Number(statsRow?.total_inactive || 0),
+        total_balance: Number(statsRow?.total_balance || 0),
+      },
     };
   }
 
   public static async getNasabahById(id: string) {
     const nasabah = await db.fetchOne<any>(
-      'SELECT * FROM nasabah WHERE id = ? OR customer_id = ? OR account_no = ? OR nik = ?',
+      `SELECT n.*,
+              CAST(n.nik AS TEXT) as nik,
+              CAST(n.phone AS TEXT) as phone
+       FROM nasabah n
+       WHERE n.id = ? OR n.customer_id = ? OR n.account_no = ? OR n.nik = ?`,
       [id, id, id, id]
     );
     if (!nasabah) {
