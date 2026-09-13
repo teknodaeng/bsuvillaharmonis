@@ -10,7 +10,8 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## 📌 Rekapitulasi Versi Rilis
 
-- [v2.0.0 (Current - Hono Architecture)](#v200---2026-09-08-hono-web-framework-architecture) — Modernisasi Arsitektur Backend ke Hono Web Application Framework (TypeScript)
+- [v2.1.0 (Current)](#v210---2026-09-14-multi-item-deposit-receipt-printing-nasabah-list-hardening--vitest-expansion) — Setor Sampah Multi-Item, Desain Struk Kasir & PDF, Perbaikan Daftar Nasabah, Penguatan Keamanan, & Ekspansi Test Suite Vitest
+- [v2.0.0 (Hono Architecture)](#v200---2026-09-08-hono-web-framework-architecture--frontend-alignment) — Modernisasi Arsitektur Backend ke Hono Web Application Framework (TypeScript)
 - [v1.1.0](#v110---2026-09-08-production-ready) — Pembaruan PRD Final, Penyelarasan Dokumen Spesifikasi Sistem & Validasi UAT 100%
 - [v1.0.3](#v103---2026-09-06) — Perbaikan Autentikasi Login, Multi-Identifier, & Penanganan Sesi Pengguna
 - [v1.0.2](#v102---2026-09-04) — Standardisasi Dependensi, Pembaruan Requirements & Script Otomasi Start
@@ -18,6 +19,53 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 - [v1.0.0 (Initial Stable Release)](#v100---2026-09-02) — Peluncuran Sistem Tabungan BSU Villa Harmonis (Fitur Inti & Modul Lengkap)
 - [v0.9.0 (Beta / Second Commit)](#v090---2026-08-28) — Integrasi Master Data Dinamis, Transaksi Cerdas Autocomplete, & Manajemen Petugas
 - [v0.1.0 (Alpha / First Commit)](#v010---2026-08-20) — Inisialisasi Repositori, Arsitektur Monorepo, & Skema Basis Data Awal
+
+---
+
+## [v2.1.0] - 2026-09-14 (Multi-Item Deposit, Receipt Printing, Nasabah List Hardening, & Vitest Expansion)
+
+### 🌿 Fitur Baru: Setor Sampah Multi-Item (Banyak Jenis Sampah dalam 1 Transaksi)
+- **Tabel Basis Data & Migrasi `transaction_items`**:
+  - Penambahan tabel basis data baru `transaction_items` untuk mencatat setiap item sampah dalam satu transaksi: `id`, `transaction_id`, `category_id`, `price_id`, `weight_gram`, `price_per_kg`, `amount`, `created_at`.
+  - Mekanisme *auto-backfill* cerdas pada [migrations.ts](backend/src/db/migrations.ts) yang mengonversi data transaksi setor tunggal historis ke dalam `transaction_items` secara otomatis saat server dinyalakan.
+- **Formulir Transaksi Setor Multi-Item Dinamis**:
+  - Formulir setor pada [NewTransactionPage.jsx](frontend/src/features/transactions/NewTransactionPage.jsx) mendukung penambahan baris item kelompok sampah dinamis tanpa batas (*add/remove row*).
+  - Validasi form memastikan setiap baris item memiliki jenis sampah dan berat timbangan valid (> 0 gram).
+  - Kalkulasi subtotal otomatis per item (`Berat (kg) × Harga/kg`) serta akumulasi total berat dan nominal rupiah seketika (*real-time reactive UI*).
+  - Skema validasi backend [transaction.schema.ts](backend/src/schemas/transaction.schema.ts) dan [transactionService.ts](backend/src/services/transactionService.ts) mendukung payload terstruktur `items: [...]` dengan penyimpanan atomik ACID.
+- **Pelaporan & Rekapitulasi Berbasis Multi-Item**:
+  - Penyempurnaan [reportService.ts](backend/src/services/reportService.ts) sehingga Laporan Rekapitulasi per Kelompok Sampah menghitung volume (kg) dan nominal rupiah berdasarkan rincian tabel `transaction_items`, menghasilkan data akumulasi yang akurat per kelompok sampah.
+
+### 🧾 Penyempurnaan Cetak Bukti Transaksi (Struk Kasir & PDF)
+- **Desain Struk Kasir Modern & Rincian Multi-Item**:
+  - Komponen [ReceiptPage.jsx](frontend/src/features/receipts/ReceiptPage.jsx) menampilkan rincian tabel multi-item lengkap (Kelompok Sampah, Berat dalam kg, Tarif per kg, dan Subtotal Rupiah).
+  - Menampilkan identitas petugas kasir pencatat transaksi (`Kasir / Petugas`).
+- **Optimalisasi Cetak Struk Fisik (@media print)**:
+  - Penyesuaian CSS cetak (@media print) yang ramah terhadap printer kasir/thermal maupun cetak kertas format A5.
+  - Elemen navigasi, tombol cetak, dan header aplikasi otomatis tersembunyi saat jendela cetak aktif (*clean print layout*).
+- **Generator Struk PDF Dinamis**:
+  - [receiptService.ts](backend/src/services/receiptService.ts) mendukung rendering multi-item dengan text-wrapping rapi dan penyesuaian tinggi struk PDF secara proporsional terhadap banyaknya baris transaksi.
+
+### 👥 Perbaikan & Peningkatan Halaman Daftar Nasabah (Nasabah List)
+- **Solusi Tuntas 64-bit Integer Overflow LibSQL**:
+  - Mengatasi error kritis `RangeError: Received integer which is too large to be safely represented as a JavaScript number` pada driver `@libsql/client` ketika membaca NIK 16 digit nasabah (misal: `9206010806900001` > `Number.MAX_SAFE_INTEGER`).
+  - Memperbarui skema kolom `nik` dan `phone` menjadi `TEXT` murni serta menambahkan pengamanan *explicit type-casting* `CAST(n.nik AS TEXT)` dan `CAST(n.phone AS TEXT)` pada [nasabahService.ts](backend/src/services/nasabahService.ts).
+- **Peningkatan UI & Dashboard Metrik Nasabah ([NasabahListPage.jsx](frontend/src/features/nasabah/NasabahListPage.jsx))**:
+  - Penambahan 4 kartu ringkasan metrik statistik teratas: **Total Nasabah**, **Nasabah Aktif**, **Nasabah Nonaktif**, dan **Total Saldo Tabungan**.
+  - Fitur pencarian cerdas terintegrasi (Nama, NIK, ID/Rekening, No. HP, Alamat, RT/RW, Kontak) dengan tombol hapus pencarian (*clear button* `X`).
+  - Penambahan filter Kategori Nasabah (*Rumah Tangga/Individu*, *Sekolah*, *Instansi*), filter Status Akun, dan tombol *Reset Filter*.
+- **Optimasi Performa Query Database**:
+  - Menghilangkan *N+1 query overhead* pada kalkulasi saldo dan transaksi nasabah dengan menerapkan subquery agregasi terpadu dalam satu kali eksekusi database.
+
+### 🛡️ Penguatan Keamanan, Validasi, & Pengujian Otomatis
+- **Validasi Fleksibel RT/RW & Type Coercion**:
+  - Memperbarui skema Zod nasabah agar mendukung input nomor RT dan RW dengan rentang 1 hingga 3 digit (misal: RT 6, RW 03, RT 105) dengan *numeric coercion* otomatis antara tipe data string dan number.
+- **Keamanan & Rate Limiting**:
+  - Penerapan middleware rate limiting untuk memproteksi endpoint autentikasi `/api/v1/auth/login` dari upaya *brute-force* (HTTP 429 Too Many Requests).
+  - Sanitasi karakter formula pada ekspor spreadsheet ExcelJS guna mencegah eksploitasi *formula injection*.
+  - Pengamanan mutasi saldo secara atomik (*atomic transaction* dan *balance guard*) untuk menjamin saldo tabungan nasabah tidak dapat menjadi minus.
+- **Ekspansi Suite Pengujian Otomatis Vitest**:
+  - Perluasan rangkaian pengujian otomatis pada `backend/tests/` menjadi **7 test files** dengan **41 skenario pengujian** (autentikasi, security hardening, master harga, transaksi multi-item, validasi RT/RW nasabah, dashboard, dan laporan) dengan status 100% lulus.
 
 ---
 
