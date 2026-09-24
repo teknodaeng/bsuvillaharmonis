@@ -1,9 +1,12 @@
-import PDFDocument from 'pdfkit';
+import PDFDocRaw from 'pdfkit/js/pdfkit.standalone.js';
 import { config } from '../core/config.js';
 import { AppError } from '../utils/response.js';
 import { formatRupiah } from '../utils/currency.js';
 import { formatDateTime, formatKg } from '../utils/formatting.js';
 import { transactionService } from './transactionService.js';
+
+// Standalone PDFKit with inlined standard AFM fonts for Cloudflare Workers & Node.js edge environments
+const PDFDocument = ((PDFDocRaw as any)?.default || PDFDocRaw) as typeof import('pdfkit');
 
 export class ReceiptService {
   public static async getReceiptData(transactionId: string, currentUser: any) {
@@ -89,15 +92,18 @@ export class ReceiptService {
     const receipt = await this.getReceiptData(transactionId, currentUser);
 
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({
-        size: 'A5',
-        margin: 28,
-      });
+      try {
+        const doc = new PDFDocument({
+          size: 'A5',
+          margin: 28,
+        });
 
-      const chunks: Buffer[] = [];
-      doc.on('data', (chunk) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (err) => reject(err));
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk: any) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', (err: any) => reject(err));
 
       // Header
       doc
@@ -297,6 +303,9 @@ export class ReceiptService {
         .text(`Dicetak pada: ${receipt.printed_at}`, { align: 'center' });
 
       doc.end();
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 }

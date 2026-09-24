@@ -1,11 +1,14 @@
 import ExcelJS from 'exceljs';
-import PDFDocument from 'pdfkit';
+import PDFDocRaw from 'pdfkit/js/pdfkit.standalone.js';
 import { db } from '../core/database.js';
 import { config } from '../core/config.js';
 import { formatRupiah } from '../utils/currency.js';
 import { formatDate, formatDateTime, formatKg } from '../utils/formatting.js';
 import { sanitizeExcelRow } from '../utils/sanitizeExcel.js';
 import { nasabahService } from './nasabahService.js';
+
+// Standalone PDFKit with inlined standard AFM fonts for Cloudflare Workers & Node.js edge environments
+const PDFDocument = ((PDFDocRaw as any)?.default || PDFDocRaw) as typeof import('pdfkit');
 
 export class ReportService {
   // --- 1. Laporan Transaksi Tabungan ---
