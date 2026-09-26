@@ -11,8 +11,11 @@ import {
   Save,
   CheckCircle,
   Printer,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { nasabahService } from "../../services/nasabahService";
+import { reportService } from "../../services/reportService";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -23,7 +26,7 @@ import { Badge } from "../../components/ui/Badge";
 import { DataTable } from "../../components/table/DataTable";
 import { Pagination } from "../../components/table/Pagination";
 import { formatRupiah } from "../../utils/currency";
-import { formatDateTime, formatKg } from "../../utils/formatting";
+import { formatDateTime, formatKg, downloadBlob } from "../../utils/formatting";
 import { useUIStore } from "../../stores/uiStore";
 
 export const NasabahDetailPage = () => {
@@ -35,6 +38,7 @@ export const NasabahDetailPage = () => {
   const [activeTab, setActiveTab] = useState("profil");
   const [isEditing, setIsEditing] = useState(false);
   const [page, setPage] = useState(1);
+  const [isDownloadingStatement, setIsDownloadingStatement] = useState(false);
 
   // Form states for editing
   const [editNik, setEditNik] = useState("");
@@ -129,6 +133,34 @@ export const NasabahDetailPage = () => {
       kabupaten_kota: editKabupatenKota || null,
       email: editEmail || null,
     });
+  };
+
+  const handleDownloadStatement = async (format) => {
+    setIsDownloadingStatement(format);
+    try {
+      const params = { nasabah_id: nasabahId };
+      const safeName = nasabah?.name?.replace(/[^a-zA-Z0-9]/g, "_") || "nasabah";
+      if (format === "excel") {
+        const blob = await reportService.downloadActiveNasabahTransactionsExcel(params);
+        downloadBlob(blob, `Riwayat_Transaksi_${nasabah?.customer_id || ""}_${safeName}.xlsx`);
+      } else {
+        const blob = await reportService.downloadActiveNasabahTransactionsPdf(params);
+        downloadBlob(blob, `Riwayat_Transaksi_${nasabah?.customer_id || ""}_${safeName}.pdf`);
+      }
+      addToast({
+        title: "Download Berhasil",
+        message: `Laporan riwayat transaksi ${nasabah?.name || "nasabah"} (.${format === "excel" ? "xlsx" : "pdf"}) berhasil diunduh.`,
+        type: "success",
+      });
+    } catch (err) {
+      addToast({
+        title: "Gagal Mengunduh Laporan",
+        message: err.message,
+        type: "danger",
+      });
+    } finally {
+      setIsDownloadingStatement(false);
+    }
   };
 
   const txColumns = [
@@ -516,6 +548,30 @@ export const NasabahDetailPage = () => {
         <Card
           title="Riwayat Transaksi Nasabah"
           subtitle="Daftar setoran sampah dan penarikan tunai yang pernah dilakukan"
+          action={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="xs"
+                className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                icon={FileSpreadsheet}
+                isLoading={isDownloadingStatement === "excel"}
+                onClick={() => handleDownloadStatement("excel")}
+              >
+                Unduh Excel
+              </Button>
+              <Button
+                variant="outline"
+                size="xs"
+                className="text-rose-700 border-rose-300 hover:bg-rose-50"
+                icon={FileText}
+                isLoading={isDownloadingStatement === "pdf"}
+                onClick={() => handleDownloadStatement("pdf")}
+              >
+                Unduh PDF
+              </Button>
+            </div>
+          }
         >
           <DataTable
             columns={txColumns}

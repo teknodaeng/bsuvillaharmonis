@@ -6,6 +6,7 @@ import { nasabahService } from '../services/nasabahService.js';
 import { dashboardService } from '../services/dashboardService.js';
 import { transactionService } from '../services/transactionService.js';
 import { receiptService } from '../services/receiptService.js';
+import { reportService } from '../services/reportService.js';
 import { successResponse } from '../utils/response.js';
 import { validateJson } from '../utils/validator.js';
 import { nasabahSelfUpdateSchema } from '../schemas/nasabah.schema.js';
@@ -82,3 +83,45 @@ meRouter.get('/transactions/:id/receipt', async (c) => {
   const receiptData = await receiptService.getReceiptData(id, user);
   return successResponse(c, receiptData);
 });
+
+// GET /api/v1/me/transactions/statement.xlsx
+meRouter.get('/transactions/statement.xlsx', async (c) => {
+  const user = c.get('user');
+  const query = c.req.query();
+  const buffer = await reportService.generateActiveNasabahTransactionsExcel({
+    nasabah_id: user.nasabah_id || user.id,
+    start_date: query.start_date,
+    end_date: query.end_date,
+    type: query.type,
+  });
+
+  c.header(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+  c.header(
+    'Content-Disposition',
+    'attachment; filename="riwayat-transaksi-saya.xlsx"'
+  );
+  return c.body(new Uint8Array(buffer));
+});
+
+// GET /api/v1/me/transactions/statement.pdf
+meRouter.get('/transactions/statement.pdf', async (c) => {
+  const user = c.get('user');
+  const query = c.req.query();
+  const buffer = await reportService.generateActiveNasabahTransactionsPdf({
+    nasabah_id: user.nasabah_id || user.id,
+    start_date: query.start_date,
+    end_date: query.end_date,
+    type: query.type,
+  });
+
+  c.header('Content-Type', 'application/pdf');
+  c.header(
+    'Content-Disposition',
+    'inline; filename="riwayat-transaksi-saya.pdf"'
+  );
+  return c.body(new Uint8Array(buffer));
+});
+

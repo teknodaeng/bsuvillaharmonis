@@ -113,3 +113,42 @@ reportsRouter.get('/prices.pdf', async (c) => {
   c.header('Content-Disposition', 'inline; filename="master-harga-sampah.pdf"');
   return c.body(new Uint8Array(buffer));
 });
+
+// 5. Active Nasabah Transaction History Report
+reportsRouter.get('/active-nasabah-transactions.xlsx', async (c) => {
+  const query = c.req.query();
+  const buffer = await reportService.generateActiveNasabahTransactionsExcel({
+    nasabah_id: query.nasabah_id,
+    start_date: query.start_date,
+    end_date: query.end_date,
+    type: query.type,
+  });
+
+  c.header(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+  c.header(
+    'Content-Disposition',
+    'attachment; filename="laporan-riwayat-transaksi-nasabah-aktif.xlsx"'
+  );
+  return c.body(new Uint8Array(buffer));
+});
+
+reportsRouter.get('/active-nasabah-transactions.pdf', async (c) => {
+  const query = c.req.query();
+  const buffer = await reportService.generateActiveNasabahTransactionsPdf({
+    nasabah_id: query.nasabah_id,
+    start_date: query.start_date,
+    end_date: query.end_date,
+    type: query.type,
+  });
+
+  c.header('Content-Type', 'application/pdf');
+  c.header(
+    'Content-Disposition',
+    'inline; filename="laporan-riwayat-transaksi-nasabah-aktif.pdf"'
+  );
+  return c.body(new Uint8Array(buffer));
+});
+

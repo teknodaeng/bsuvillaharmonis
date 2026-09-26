@@ -56,4 +56,21 @@ export const nasabahService = {
     const res = await apiClient.get("/me/transactions", { params });
     return res.data.data;
   },
+
+  downloadMyTransactionsExcel: async (params = {}) => {
+    const res = await apiClient.get("/me/transactions/statement.xlsx", {
+      params,
+      responseType: "blob",
+    });
+    return res.data;
+  },
+
+  downloadMyTransactionsPdf: async (params = {}) => {
+    const res = await apiClient.get("/me/transactions/statement.pdf", {
+      params,
+      responseType: "blob",
+    });
+    return res.data;
+  },
 };
+

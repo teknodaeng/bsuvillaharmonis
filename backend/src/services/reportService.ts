@@ -628,7 +628,566 @@ export class ReportService {
     });
   }
 
+  // --- 5. Laporan Riwayat Transaksi Setiap Nasabah Aktif ---
+  public static async generateActiveNasabahTransactionsExcel(params: {
+    nasabah_id?: string;
+    start_date?: string;
+    end_date?: string;
+    type?: string;
+  }): Promise<Buffer> {
+    const { nasabah_list, summary } = await this.getActiveNasabahTransactionsData(params);
+
+    const workbook = new ExcelJS.Workbook();
+
+    // Sheet 1: Riwayat Transaksi Per Nasabah Aktif
+    const ws1 = workbook.addWorksheet('Riwayat Nasabah Aktif');
+
+    const singleNasabah =
+      params.nasabah_id && nasabah_list.length === 1 ? nasabah_list[0] : null;
+    const titleText = singleNasabah
+      ? `LAPORAN RIWAYAT TRANSAKSI NASABAH: ${singleNasabah.name.toUpperCase()} (${singleNasabah.customer_id})`
+      : 'LAPORAN RIWAYAT TRANSAKSI SETIAP NASABAH AKTIF';
+
+    const subTitle = `Periode: ${params.start_date || 'Awal'} s/d ${params.end_date || 'Sekarang'} | Filter Mutasi: ${params.type || 'Semua (Setor & Tarik)'} | Tanggal Unduh: ${formatDate(new Date())}`;
+
+    this.setupExcelHeader(ws1, titleText, subTitle, 10);
+
+    for (const n of nasabah_list) {
+      // Banner 1: Identitas Nasabah
+      const bannerRow1 = ws1.addRow([
+        `NASABAH: [${n.customer_id}] ${n.name.toUpperCase()}   |   No. Rek: ${n.account_no}   |   Kategori: ${n.nasabah_category}`,
+        '', '', '', '', '', '', '', '', '',
+      ]);
+      ws1.mergeCells(bannerRow1.number, 1, bannerRow1.number, 10);
+      bannerRow1.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      bannerRow1.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF15803D' },
+      };
+      bannerRow1.alignment = { horizontal: 'left', vertical: 'middle' };
+
+      // Banner 2: Detail Kontak & Saldo
+      const addressParts = [
+        n.address,
+        n.rt ? `RT ${n.rt}` : '',
+        n.rw ? `RW ${n.rw}` : '',
+        n.kelurahan,
+        n.kecamatan,
+      ].filter(Boolean);
+      const addressStr = addressParts.length > 0 ? addressParts.join(', ') : '-';
+
+      const bannerRow2 = ws1.addRow([
+        `NIK: ${n.nik || '-'}   |   No. HP: ${n.phone || '-'}   |   Alamat: ${addressStr}   |   Posisi Saldo Tabungan: ${formatRupiah(n.current_balance)}`,
+        '', '', '', '', '', '', '', '', '',
+      ]);
+      ws1.mergeCells(bannerRow2.number, 1, bannerRow2.number, 10);
+      bannerRow2.font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF14532D' } };
+      bannerRow2.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFDCFCE7' },
+      };
+      bannerRow2.alignment = { horizontal: 'left', vertical: 'middle' };
+
+      // Table Header Row for this Nasabah
+      const thRow = ws1.addRow([
+        'No',
+        'No. Transaksi',
+        'Tanggal & Jam',
+        'Jenis Mutasi',
+        'Kategori / Sampah',
+        'Berat (kg)',
+        'Tarif / kg',
+        'Setoran (Kredit)',
+        'Penarikan (Debit)',
+        'Saldo Berjalan',
+      ]);
+      thRow.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF1F2937' } };
+      thRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE5E7EB' },
+      };
+      thRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      if (n.transactions.length === 0) {
+        const emptyRow = ws1.addRow([
+          '-',
+          '-',
+          '-',
+          '-',
+          'Belum ada catatan mutasi transaksi pada periode ini',
+          '-',
+          '-',
+          0,
+          0,
+          n.current_balance,
+        ]);
+        emptyRow.font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } };
+      } else {
+        n.transactions.forEach((tx: any, idx: number) => {
+          const r = ws1.addRow(
+            sanitizeExcelRow([
+              idx + 1,
+              tx.transaction_no,
+              formatDateTime(tx.transaction_date),
+              tx.type,
+              tx.category_display || '-',
+              tx.weight_kg ? Number(tx.weight_kg.toFixed(3)) : '-',
+              tx.price_per_kg || '-',
+              tx.credit || 0,
+              tx.debit || 0,
+              tx.balance_after,
+            ])
+          );
+          r.font = { name: 'Arial', size: 9 };
+          r.alignment = { vertical: 'middle' };
+        });
+      }
+
+      // Subtotal row for this nasabah
+      const subtotalRow = ws1.addRow([
+        `SUBTOTAL ${n.name}`,
+        '',
+        '',
+        `${n.transactions.length} Transaksi`,
+        '',
+        n.total_weight_kg > 0 ? Number(n.total_weight_kg.toFixed(3)) : '-',
+        '',
+        n.total_setor,
+        n.total_tarik,
+        n.current_balance,
+      ]);
+      subtotalRow.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF1F2937' } };
+      subtotalRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF3F4F6' },
+      };
+
+      ws1.addRow([]); // Blank line separator
+    }
+
+    // Grand Total Row if multiple nasabah
+    if (nasabah_list.length > 1) {
+      const grandRow = ws1.addRow([
+        'GRAND TOTAL KESELURUHAN',
+        '',
+        '',
+        `${summary.grand_total_transactions} Trx (${nasabah_list.length} Nasabah Aktif)`,
+        '',
+        summary.grand_total_weight_kg,
+        '',
+        summary.grand_total_setor,
+        summary.grand_total_tarik,
+        summary.grand_total_balance,
+      ]);
+      grandRow.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      grandRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF15803D' },
+      };
+    }
+
+    this.autoFitColumns(ws1);
+
+    // Sheet 2: Rekap Ringkasan Nasabah Aktif
+    const ws2 = workbook.addWorksheet('Rekapitulasi Nasabah');
+    this.setupExcelHeader(
+      ws2,
+      'REKAPITULASI STATUS & AKTIVITAS NASABAH AKTIF',
+      `Total ${nasabah_list.length} Nasabah Aktif Terdaftar | Tanggal: ${formatDate(new Date())}`,
+      12
+    );
+
+    const rekapHeader = ws2.addRow([
+      'No',
+      'ID Nasabah',
+      'No. Rekening',
+      'NIK',
+      'Nama Lengkap',
+      'Kategori',
+      'No. HP',
+      'Jml Trx',
+      'Total Sampah (kg)',
+      'Total Setoran (Rp)',
+      'Total Penarikan (Rp)',
+      'Saldo Tabungan (Rp)',
+    ]);
+    this.styleTableHeader(rekapHeader);
+
+    nasabah_list.forEach((n, idx) => {
+      ws2.addRow(
+        sanitizeExcelRow([
+          idx + 1,
+          n.customer_id,
+          n.account_no,
+          n.nik,
+          n.name,
+          n.nasabah_category,
+          n.phone,
+          n.transaction_count,
+          n.total_weight_kg,
+          n.total_setor,
+          n.total_tarik,
+          n.current_balance,
+        ])
+      );
+    });
+
+    const sumRekap = ws2.addRow([
+      'TOTAL',
+      '',
+      '',
+      '',
+      `${nasabah_list.length} Nasabah Aktif`,
+      '',
+      '',
+      summary.grand_total_transactions,
+      summary.grand_total_weight_kg,
+      summary.grand_total_setor,
+      summary.grand_total_tarik,
+      summary.grand_total_balance,
+    ]);
+    sumRekap.font = { bold: true };
+    sumRekap.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFF3F4F6' },
+    };
+
+    this.autoFitColumns(ws2);
+
+    return Buffer.from(await workbook.xlsx.writeBuffer());
+  }
+
+  public static async generateActiveNasabahTransactionsPdf(params: {
+    nasabah_id?: string;
+    start_date?: string;
+    end_date?: string;
+    type?: string;
+  }): Promise<Buffer> {
+    const { nasabah_list, summary } = await this.getActiveNasabahTransactionsData(params);
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        layout: 'landscape',
+        margin: 28,
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (c) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (e) => reject(e));
+
+      const singleNasabah =
+        params.nasabah_id && nasabah_list.length === 1 ? nasabah_list[0] : null;
+      const titleText = singleNasabah
+        ? `LAPORAN RIWAYAT TRANSAKSI NASABAH: ${singleNasabah.name.toUpperCase()} (${singleNasabah.customer_id})`
+        : 'LAPORAN RIWAYAT TRANSAKSI SETIAP NASABAH AKTIF';
+
+      const subTitle = `Periode: ${params.start_date || 'Awal'} s/d ${params.end_date || 'Sekarang'} | Filter Mutasi: ${params.type || 'Semua'} | Dicetak: ${formatDateTime(new Date())}`;
+
+      this.drawPdfReportHeader(doc, titleText, subTitle);
+
+      const cols = [
+        { label: 'No', width: 25, align: 'center' },
+        { label: 'No. TRX', width: 95, align: 'left' },
+        { label: 'Tanggal', width: 75, align: 'center' },
+        { label: 'Jenis', width: 45, align: 'center' },
+        { label: 'Kategori / Sampah', width: 140, align: 'left' },
+        { label: 'Berat', width: 55, align: 'right' },
+        { label: 'Tarif/kg', width: 65, align: 'right' },
+        { label: 'Setor (Rp)', width: 75, align: 'right' },
+        { label: 'Tarik (Rp)', width: 75, align: 'right' },
+        { label: 'Saldo (Rp)', width: 75, align: 'right' },
+      ];
+      const tableWidth = cols.reduce((a, b) => a + b.width, 0);
+
+      let y = doc.y + 6;
+
+      nasabah_list.forEach((n) => {
+        // New page check for nasabah card
+        if (y > doc.page.height - 110) {
+          doc.addPage({ size: 'A4', layout: 'landscape', margin: 28 });
+          y = 28;
+        }
+
+        // Draw Nasabah Header Card Box
+        doc.rect(28, y, tableWidth, 26).fillAndStroke('#F0FDF4', '#86EFAC');
+
+        // Text inside Nasabah Box
+        doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#15803D');
+        doc.text(
+          `[${n.customer_id}] ${n.name.toUpperCase()} (Rek: ${n.account_no}) — Kategori: ${n.nasabah_category}`,
+          34,
+          y + 4,
+          { width: tableWidth - 12 }
+        );
+
+        doc.fontSize(7).font('Helvetica').fillColor('#374151');
+        const addrParts = [
+          n.address,
+          n.rt ? `RT ${n.rt}` : '',
+          n.rw ? `RW ${n.rw}` : '',
+          n.kelurahan,
+          n.kecamatan,
+        ].filter(Boolean);
+        const addr = addrParts.length > 0 ? addrParts.join(', ') : '-';
+
+        doc.text(
+          `NIK: ${n.nik || '-'}  |  HP: ${n.phone || '-'}  |  Alamat: ${addr}  |  Saldo Saat Ini: ${formatRupiah(n.current_balance)}`,
+          34,
+          y + 15,
+          { width: tableWidth - 12 }
+        );
+
+        y += 30;
+
+        // Table Header
+        this.drawPdfTableHeader(doc, y, cols);
+        y += 18;
+
+        if (n.transactions.length === 0) {
+          doc.fontSize(7.5).font('Helvetica-Oblique').fillColor('#6b7280');
+          doc.text('Belum ada riwayat transaksi pada rentang filter ini.', 34, y + 3, {
+            width: tableWidth - 12,
+          });
+          doc.strokeColor('#e5e7eb').lineWidth(0.5).moveTo(28, y + 14).lineTo(28 + tableWidth, y + 14).stroke();
+          y += 16;
+        } else {
+          n.transactions.forEach((tx: any, idx: number) => {
+            if (y > doc.page.height - 35) {
+              doc.addPage({ size: 'A4', layout: 'landscape', margin: 28 });
+              y = 28;
+              this.drawPdfTableHeader(doc, y, cols);
+              y += 18;
+            }
+
+            let x = 28;
+            doc.fontSize(7).font('Helvetica').fillColor('#1f2937');
+
+            const rowValues = [
+              String(idx + 1),
+              tx.transaction_no,
+              formatDateTime(tx.transaction_date),
+              tx.type,
+              tx.category_display || '-',
+              tx.weight_kg ? `${tx.weight_kg.toFixed(3)} kg` : '-',
+              tx.price_per_kg ? formatRupiah(tx.price_per_kg) : '-',
+              tx.credit > 0 ? formatRupiah(tx.credit) : '-',
+              tx.debit > 0 ? formatRupiah(tx.debit) : '-',
+              formatRupiah(tx.balance_after),
+            ];
+
+            rowValues.forEach((val, cIdx) => {
+              doc.text(val, x + 2, y + 2, {
+                width: cols[cIdx].width - 4,
+                align: cols[cIdx].align as any,
+                lineBreak: false,
+              });
+              x += cols[cIdx].width;
+            });
+
+            doc.strokeColor('#f3f4f6').lineWidth(0.5).moveTo(28, y + 13).lineTo(28 + tableWidth, y + 13).stroke();
+            y += 14;
+          });
+        }
+
+        // Subtotal row for this nasabah
+        doc.rect(28, y, tableWidth, 14).fill('#F9FAFB');
+        doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#15803D');
+        doc.text(
+          `Subtotal ${n.name}: Setor = ${formatRupiah(n.total_setor)}  |  Tarik = ${formatRupiah(n.total_tarik)}  |  Volume Sampah = ${n.total_weight_kg.toFixed(3)} kg  |  Transaksi = ${n.transactions.length}`,
+          34,
+          y + 3,
+          { width: tableWidth - 12 }
+        );
+        doc.strokeColor('#d1d5db').lineWidth(0.5).moveTo(28, y + 14).lineTo(28 + tableWidth, y + 14).stroke();
+        y += 20;
+      });
+
+      // Grand Total Summary if more than 1 nasabah
+      if (nasabah_list.length > 1) {
+        if (y > doc.page.height - 45) {
+          doc.addPage({ size: 'A4', layout: 'landscape', margin: 28 });
+          y = 28;
+        }
+
+        doc.rect(28, y, tableWidth, 22).fillAndStroke('#15803D', '#166534');
+        doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#FFFFFF');
+        doc.text(
+          `TOTAL KESELURUHAN ${nasabah_list.length} NASABAH AKTIF:`,
+          34,
+          y + 3,
+          { width: tableWidth - 12 }
+        );
+        doc.fontSize(7.5).font('Helvetica').fillColor('#DCFCE7');
+        doc.text(
+          `Total Transaksi = ${summary.grand_total_transactions}  |  Total Sampah = ${summary.grand_total_weight_kg.toFixed(3)} kg  |  Total Setor = ${formatRupiah(summary.grand_total_setor)}  |  Total Tarik = ${formatRupiah(summary.grand_total_tarik)}  |  Total Saldo Kewajiban = ${formatRupiah(summary.grand_total_balance)}`,
+          34,
+          y + 12,
+          { width: tableWidth - 12 }
+        );
+      }
+
+      doc.end();
+    });
+  }
+
   // --- Internal Data Fetchers ---
+  private static async getActiveNasabahTransactionsData(params: {
+    nasabah_id?: string;
+    start_date?: string;
+    end_date?: string;
+    type?: string;
+  }) {
+    const nasabahArgs: any[] = [];
+    let nasabahWhere = "status = 'ACTIVE'";
+
+    if (params.nasabah_id) {
+      nasabahWhere += ' AND (id = ? OR customer_id = ? OR account_no = ?)';
+      nasabahArgs.push(params.nasabah_id, params.nasabah_id, params.nasabah_id);
+    }
+
+    const nasabahRows = await db.fetchAll<any>(
+      `SELECT 
+         id,
+         customer_id,
+         account_no,
+         CAST(nik AS TEXT) as nik,
+         name,
+         CAST(phone AS TEXT) as phone,
+         address,
+         rt,
+         rw,
+         kelurahan,
+         kecamatan,
+         kabupaten_kota,
+         nasabah_category,
+         email,
+         status,
+         created_at
+       FROM nasabah
+       WHERE ${nasabahWhere}
+       ORDER BY customer_id ASC`,
+      nasabahArgs
+    );
+
+    let grandTotalSetor = 0;
+    let grandTotalTarik = 0;
+    let grandTotalWeightGram = 0;
+    let grandTotalBalance = 0;
+    let grandTotalTransactions = 0;
+
+    const nasabahList = await Promise.all(
+      nasabahRows.map(async (n) => {
+        const txConditions: string[] = ['t.nasabah_id = ?'];
+        const txArgs: any[] = [n.id];
+
+        if (params.start_date) {
+          txConditions.push('date(t.transaction_date) >= date(?)');
+          txArgs.push(params.start_date);
+        }
+        if (params.end_date) {
+          txConditions.push('date(t.transaction_date) <= date(?)');
+          txArgs.push(params.end_date);
+        }
+        if (params.type) {
+          txConditions.push('t.type = ?');
+          txArgs.push(params.type);
+        }
+
+        const txRows = await db.fetchAll<any>(
+          `SELECT t.*,
+                  c.name as category_name,
+                  p.group_name as price_group_name,
+                  p.price_code as price_code
+           FROM transactions t
+           LEFT JOIN waste_categories c ON t.category_id = c.id
+           LEFT JOIN waste_price_masters p ON t.price_id = p.id
+           WHERE ${txConditions.join(' AND ')}
+           ORDER BY t.transaction_date ASC, t.created_at ASC`,
+          txArgs
+        );
+
+        let totalSetor = 0;
+        let totalTarik = 0;
+        let totalWeightGram = 0;
+
+        const transactions = await Promise.all(
+          txRows.map(async (tx) => {
+            const isSetor = tx.type === 'SETOR';
+            if (isSetor) {
+              totalSetor += tx.credit || tx.amount || 0;
+              totalWeightGram += tx.weight_gram || 0;
+            } else {
+              totalTarik += tx.debit || tx.amount || 0;
+            }
+
+            // Resolve category / item display
+            let categoryDisplay = tx.category_name || '-';
+            if (isSetor) {
+              const items = await db.fetchAll<any>(
+                `SELECT ti.*, c.name as category_name
+                 FROM transaction_items ti
+                 JOIN waste_categories c ON ti.category_id = c.id
+                 WHERE ti.transaction_id = ?`,
+                [tx.id]
+              );
+              if (items.length > 1) {
+                categoryDisplay = items.map((it) => it.category_name).join(', ');
+              } else if (items.length === 1 && !tx.category_name) {
+                categoryDisplay = items[0].category_name;
+              }
+            }
+
+            return {
+              ...tx,
+              category_display: categoryDisplay,
+              weight_kg: tx.weight_gram ? tx.weight_gram / 1000.0 : null,
+              credit: tx.credit || (isSetor ? tx.amount : 0),
+              debit: tx.debit || (!isSetor ? tx.amount : 0),
+            };
+          })
+        );
+
+        const currentBalance = await nasabahService.getNasabahBalance(n.id);
+
+        grandTotalSetor += totalSetor;
+        grandTotalTarik += totalTarik;
+        grandTotalWeightGram += totalWeightGram;
+        grandTotalBalance += currentBalance;
+        grandTotalTransactions += transactions.length;
+
+        return {
+          ...n,
+          current_balance: currentBalance,
+          total_setor: totalSetor,
+          total_tarik: totalTarik,
+          total_weight_kg: Number((totalWeightGram / 1000.0).toFixed(3)),
+          total_weight_gram: totalWeightGram,
+          transaction_count: transactions.length,
+          transactions,
+        };
+      })
+    );
+
+    return {
+      nasabah_list: nasabahList,
+      summary: {
+        total_nasabah: nasabahList.length,
+        grand_total_setor: grandTotalSetor,
+        grand_total_tarik: grandTotalTarik,
+        grand_total_weight_kg: Number((grandTotalWeightGram / 1000.0).toFixed(3)),
+        grand_total_balance: grandTotalBalance,
+        grand_total_transactions: grandTotalTransactions,
+      },
+    };
+  }
   private static async getTransactionsData(params: any) {
     const conditions: string[] = ['1=1'];
     const args: any[] = [];

@@ -60,4 +60,21 @@ export const reportService = {
     });
     return res.data;
   },
+
+  downloadActiveNasabahTransactionsExcel: async (params = {}) => {
+    const res = await apiClient.get("/admin/reports/active-nasabah-transactions.xlsx", {
+      params,
+      responseType: "blob",
+    });
+    return res.data;
+  },
+
+  downloadActiveNasabahTransactionsPdf: async (params = {}) => {
+    const res = await apiClient.get("/admin/reports/active-nasabah-transactions.pdf", {
+      params,
+      responseType: "blob",
+    });
+    return res.data;
+  },
 };
+

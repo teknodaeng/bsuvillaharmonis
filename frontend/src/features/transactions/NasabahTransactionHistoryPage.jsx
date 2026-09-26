@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Printer, Filter } from "lucide-react";
+import { Search, Printer, Filter, FileSpreadsheet, FileText } from "lucide-react";
 import { nasabahService } from "../../services/nasabahService";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
@@ -12,16 +12,19 @@ import { Badge } from "../../components/ui/Badge";
 import { DataTable } from "../../components/table/DataTable";
 import { Pagination } from "../../components/table/Pagination";
 import { formatRupiah } from "../../utils/currency";
-import { formatDateTime, formatKg } from "../../utils/formatting";
+import { formatDateTime, formatKg, downloadBlob } from "../../utils/formatting";
+import { useUIStore } from "../../stores/uiStore";
 
 export const NasabahTransactionHistoryPage = () => {
   const navigate = useNavigate();
+  const { addToast } = useUIStore();
 
   const [typeFilter, setTypeFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -114,11 +117,66 @@ export const NasabahTransactionHistoryPage = () => {
     },
   ];
 
+  const handleDownloadStatement = async (format) => {
+    setIsDownloading(format);
+    try {
+      const params = {
+        type: typeFilter || undefined,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+      };
+      if (format === "excel") {
+        const blob = await nasabahService.downloadMyTransactionsExcel(params);
+        downloadBlob(blob, `Buku_Tabungan_Saya_${Date.now()}.xlsx`);
+      } else {
+        const blob = await nasabahService.downloadMyTransactionsPdf(params);
+        downloadBlob(blob, `Buku_Tabungan_Saya_${Date.now()}.pdf`);
+      }
+      addToast({
+        title: "Download Berhasil",
+        message: `Riwayat mutasi transaksi Anda (.${format === "excel" ? "xlsx" : "pdf"}) berhasil diunduh.`,
+        type: "success",
+      });
+    } catch (err) {
+      addToast({
+        title: "Gagal Mengunduh Laporan",
+        message: err.message,
+        type: "danger",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Riwayat Transaksi Tabungan"
         subtitle="Daftar lengkap seluruh mutasi setor sampah dan penarikan saldo Anda"
+        actions={
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+              icon={FileSpreadsheet}
+              isLoading={isDownloading === "excel"}
+              onClick={() => handleDownloadStatement("excel")}
+            >
+              Unduh Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-rose-700 border-rose-300 hover:bg-rose-50"
+              icon={FileText}
+              isLoading={isDownloading === "pdf"}
+              onClick={() => handleDownloadStatement("pdf")}
+            >
+              Unduh PDF
+            </Button>
+          </div>
+        }
       />
 
       <Card className="mb-4">
