@@ -8,12 +8,12 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ---
 
-## 📌 Rekapitulasi Versi Rilis
+## Rekapitulasi Versi Rilis Uji Coba
 
 - [v2.2.0 (Current)](#v220---2026-10-09-custom-transaction-date-time-picker-backdating-support--receipt-layout-centering) — Pilihan Tanggal & Waktu Transaksi Fleksibel, Dukungan Transaksi Susulan (Backdate), Penyelarasan Jam Cetak Bukti Transaksi, & Tata Letak Footer Struk di Tengah
 - [v2.1.0](#v210---2026-09-14-multi-item-deposit-receipt-printing-nasabah-list-hardening--vitest-expansion) — Setor Sampah Multi-Item, Desain Struk Kasir & PDF, Perbaikan Daftar Nasabah, Penguatan Keamanan, & Ekspansi Test Suite Vitest
 - [v2.0.0 (Hono Architecture)](#v200---2026-09-08-hono-web-framework-architecture--frontend-alignment) — Modernisasi Arsitektur Backend ke Hono Web Application Framework (TypeScript)
-- [v1.1.0](#v110---2026-09-08-production-ready) — Pembaruan PRD Final, Penyelarasan Dokumen Spesifikasi Sistem & Validasi UAT 100%
+- [v1.1.0](#v110---2026-09-08-production-ready) — Pembaruan, Penyelarasan Dokumen Spesifikasi Sistem & Validasi UAT 100%
 - [v1.0.3](#v103---2026-09-06) — Perbaikan Autentikasi Login, Multi-Identifier, & Penanganan Sesi Pengguna
 - [v1.0.2](#v102---2026-09-04) — Standardisasi Dependensi, Pembaruan Requirements & Script Otomasi Start
 - [v1.0.1](#v101---2026-09-03) — Penyempurnaan Generator Laporan (Text-Wrapping PDF & Auto-Fit Excel) serta Pengujian UAT
@@ -25,13 +25,14 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## [v2.2.0] - 2026-10-09 (Custom Transaction Date-Time Picker, Backdating Support, & Receipt Layout Centering)
 
-### ⏱️ Fitur Baru: Pilihan Tanggal & Waktu Transaksi (Catat Transaksi Baru)
+### Fitur Baru: Pilihan Tanggal & Waktu Transaksi (Catat Transaksi Baru)
+
 - **Komponen Input Tanggal & Jam Dinamis ([TransactionCreatePage.jsx](frontend/src/features/transactions/TransactionCreatePage.jsx))**:
-  - Penambahan input formulir `datetime-local` yang terintegrasi pada kartu *Informasi Nasabah & Waktu Transaksi* untuk transaksi **SETOR** maupun **TARIK**.
-  - Nilai awal otomatis terisi waktu saat ini (*current timestamp*).
+  - Penambahan input formulir `datetime-local` yang terintegrasi pada kartu _Informasi Nasabah & Waktu Transaksi_ untuk transaksi **SETOR** maupun **TARIK**.
+  - Nilai awal otomatis terisi waktu saat ini (_current timestamp_).
   - Tombol aksi cepat **"Set ke Waktu Sekarang"** untuk mengembalikan waktu ke menit/detik saat ini dengan satu klik.
-  - Teks bantu preview waktu terformat lokal bahasa Indonesia secara seketika (*real-time*), misalnya: `Jumat, 09 Oktober 2026 • 18:25 WITA`.
-  - Penanda waktu transaksi pada kotak *Kalkulasi Otomatis Setoran* dan *Kalkulasi Saldo Penarikan*.
+  - Teks bantu preview waktu terformat lokal bahasa Indonesia secara seketika (_real-time_), misalnya: `Jumat, 09 Oktober 2026 • 18:25 WITA`.
+  - Penanda waktu transaksi pada kotak _Kalkulasi Otomatis Setoran_ dan _Kalkulasi Saldo Penarikan_.
   - Validasi frontend yang memastikan format tanggal dan waktu valid sebelum payload dikirimkan ke server.
 - **Pencatatan Presisi ke Basis Data & Dukungan Transaksi Susulan ([transactionService.ts](backend/src/services/transactionService.ts))**:
   - Tanggal dan jam yang dipilih pada formulir dicatat secara presisi dan verbatim ke dalam basis data (`transactions.transaction_date`, `transactions.created_at`, serta `transaction_items.created_at`) menggunakan format standar `YYYY-MM-DD HH:mm:ss`, mencegah pergeseran jam akibat konversi UTC.
@@ -39,64 +40,70 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
   - Penyelarasan fungsi pemformatan tanggal ([formatting.ts](backend/src/utils/formatting.ts) & [formatting.js](frontend/src/utils/formatting.js)) untuk parsing deterministik format lokal tanpa distorsi zona waktu.
   - Data transaksi tersimpan dan terurut secara kronologis pada buku tabungan nasabah, riwayat mutasi, serta laporan operasional.
 
-### 🧾 Penyempurnaan Tata Letak & Jam Cetak Bukti Transaksi (Struk & PDF)
-- **Tata Letak Paragraf Footer Rapi di Tengah (*Center-Aligned*)**:
+### Penyempurnaan Tata Letak & Jam Cetak Bukti Transaksi (Struk & PDF)
+
+- **Tata Letak Paragraf Footer Rapi di Tengah (_Center-Aligned_)**:
   - Perbaikan koordinat rendering PDFKit pada [receiptService.ts](backend/src/services/receiptService.ts): mereset koordinat horizontal (`doc.x = 28` dengan lebar `doc.page.width - 56`) setelah tanda tangan petugas, sehingga paragraf ucapan terima kasih dan keterangan cetak terpusat presisi di tengah halaman struk A5.
 - **Sinkronisasi Jam Cetak Struk dengan Jam Transaksi**:
-  - Memperbaiki parameter `printed_at` / label *"Dicetak pada:"* pada generator PDF [receiptService.ts](backend/src/services/receiptService.ts) dan halaman web [ReceiptPage.jsx](frontend/src/features/receipts/ReceiptPage.jsx) agar menampilkan waktu transaksi (`formatDateTime(tx.transaction_date)`), bukan waktu saat tombol cetak ditekan.
+  - Memperbaiki parameter `printed_at` / label _"Dicetak pada:"_ pada generator PDF [receiptService.ts](backend/src/services/receiptService.ts) dan halaman web [ReceiptPage.jsx](frontend/src/features/receipts/ReceiptPage.jsx) agar menampilkan waktu transaksi (`formatDateTime(tx.transaction_date)`), bukan waktu saat tombol cetak ditekan.
 
-### ⚖️ Perbaikan Sinkronisasi Distribusi Berat Sampah per Kategori ([dashboardService.ts](backend/src/services/dashboardService.ts))
+### Perbaikan Sinkronisasi Distribusi Berat Sampah per Kategori ([dashboardService.ts](backend/src/services/dashboardService.ts))
+
 - **Agregasi Berbasis `transaction_items` pada Dashboard Admin & Nasabah**:
   - Memperbaiki query SQL agregasi berat sampah per kelompok/kategori sampah agar membaca rincian dari tabel `transaction_items` (serta fallback transaksi historis tunggal dari tabel `transactions`).
   - Menyelesaikan masalah ketidaksinkronan di mana transaksi setor multi-item (yang memiliki `transactions.category_id = NULL`) sebelumnya terlewat dari perhitungan distribusi per kategori.
 - **Penyaringan Kategori Tanpa Transaksi (Hanya Kategori Aktif > 0 Kg)**:
-  - Mengeliminasi kelompok sampah yang belum pernah disetorkan (0 Kg) dari daftar kartu *Distribusi Berat Sampah per Kategori* pada dashboard admin maupun nasabah via filter `HAVING total_weight_gram > 0` dan validasi komponen UI.
+  - Mengeliminasi kelompok sampah yang belum pernah disetorkan (0 Kg) dari daftar kartu _Distribusi Berat Sampah per Kategori_ pada dashboard admin maupun nasabah via filter `HAVING total_weight_gram > 0` dan validasi komponen UI.
   - Kartu distribusi kini berfokus secara ringkas dan bersih hanya pada jenis sampah yang benar-benar telah memiliki transaksi penyetoran.
 
 ---
 
 ## [v2.1.0] - 2026-09-14 (Multi-Item Deposit, Receipt Printing, Nasabah List Hardening, & Vitest Expansion)
 
-### 🌿 Fitur Baru: Setor Sampah Multi-Item (Banyak Jenis Sampah dalam 1 Transaksi)
+### Fitur Baru: Setor Sampah Multi-Item (Banyak Jenis Sampah dalam 1 Transaksi)
+
 - **Tabel Basis Data & Migrasi `transaction_items`**:
   - Penambahan tabel basis data baru `transaction_items` untuk mencatat setiap item sampah dalam satu transaksi: `id`, `transaction_id`, `category_id`, `price_id`, `weight_gram`, `price_per_kg`, `amount`, `created_at`.
-  - Mekanisme *auto-backfill* cerdas pada [migrations.ts](backend/src/db/migrations.ts) yang mengonversi data transaksi setor tunggal historis ke dalam `transaction_items` secara otomatis saat server dinyalakan.
+  - Mekanisme _auto-backfill_ cerdas pada [migrations.ts](backend/src/db/migrations.ts) yang mengonversi data transaksi setor tunggal historis ke dalam `transaction_items` secara otomatis saat server dinyalakan.
 - **Formulir Transaksi Setor Multi-Item Dinamis**:
-  - Formulir setor pada [NewTransactionPage.jsx](frontend/src/features/transactions/NewTransactionPage.jsx) mendukung penambahan baris item kelompok sampah dinamis tanpa batas (*add/remove row*).
+  - Formulir setor pada [NewTransactionPage.jsx](frontend/src/features/transactions/NewTransactionPage.jsx) mendukung penambahan baris item kelompok sampah dinamis tanpa batas (_add/remove row_).
   - Validasi form memastikan setiap baris item memiliki jenis sampah dan berat timbangan valid (> 0 gram).
-  - Kalkulasi subtotal otomatis per item (`Berat (kg) × Harga/kg`) serta akumulasi total berat dan nominal rupiah seketika (*real-time reactive UI*).
+  - Kalkulasi subtotal otomatis per item (`Berat (kg) × Harga/kg`) serta akumulasi total berat dan nominal rupiah seketika (_real-time reactive UI_).
   - Skema validasi backend [transaction.schema.ts](backend/src/schemas/transaction.schema.ts) dan [transactionService.ts](backend/src/services/transactionService.ts) mendukung payload terstruktur `items: [...]` dengan penyimpanan atomik ACID.
 - **Pelaporan & Rekapitulasi Berbasis Multi-Item**:
   - Penyempurnaan [reportService.ts](backend/src/services/reportService.ts) sehingga Laporan Rekapitulasi per Kelompok Sampah menghitung volume (kg) dan nominal rupiah berdasarkan rincian tabel `transaction_items`, menghasilkan data akumulasi yang akurat per kelompok sampah.
 
-### 🧾 Penyempurnaan Cetak Bukti Transaksi (Struk Kasir & PDF)
+### Penyempurnaan Cetak Bukti Transaksi (Struk Kasir & PDF)
+
 - **Desain Struk Kasir Modern & Rincian Multi-Item**:
   - Komponen [ReceiptPage.jsx](frontend/src/features/receipts/ReceiptPage.jsx) menampilkan rincian tabel multi-item lengkap (Kelompok Sampah, Berat dalam kg, Tarif per kg, dan Subtotal Rupiah).
   - Menampilkan identitas petugas kasir pencatat transaksi (`Kasir / Petugas`).
 - **Optimalisasi Cetak Struk Fisik (@media print)**:
   - Penyesuaian CSS cetak (@media print) yang ramah terhadap printer kasir/thermal maupun cetak kertas format A5.
-  - Elemen navigasi, tombol cetak, dan header aplikasi otomatis tersembunyi saat jendela cetak aktif (*clean print layout*).
+  - Elemen navigasi, tombol cetak, dan header aplikasi otomatis tersembunyi saat jendela cetak aktif (_clean print layout_).
 - **Generator Struk PDF Dinamis**:
   - [receiptService.ts](backend/src/services/receiptService.ts) mendukung rendering multi-item dengan text-wrapping rapi dan penyesuaian tinggi struk PDF secara proporsional terhadap banyaknya baris transaksi.
 
-### 👥 Perbaikan & Peningkatan Halaman Daftar Nasabah (Nasabah List)
+### Perbaikan & Peningkatan Halaman Daftar Nasabah (Nasabah List)
+
 - **Solusi Tuntas 64-bit Integer Overflow LibSQL**:
   - Mengatasi error kritis `RangeError: Received integer which is too large to be safely represented as a JavaScript number` pada driver `@libsql/client` ketika membaca NIK 16 digit nasabah (misal: `9206010806900001` > `Number.MAX_SAFE_INTEGER`).
-  - Memperbarui skema kolom `nik` dan `phone` menjadi `TEXT` murni serta menambahkan pengamanan *explicit type-casting* `CAST(n.nik AS TEXT)` dan `CAST(n.phone AS TEXT)` pada [nasabahService.ts](backend/src/services/nasabahService.ts).
+  - Memperbarui skema kolom `nik` dan `phone` menjadi `TEXT` murni serta menambahkan pengamanan _explicit type-casting_ `CAST(n.nik AS TEXT)` dan `CAST(n.phone AS TEXT)` pada [nasabahService.ts](backend/src/services/nasabahService.ts).
 - **Peningkatan UI & Dashboard Metrik Nasabah ([NasabahListPage.jsx](frontend/src/features/nasabah/NasabahListPage.jsx))**:
   - Penambahan 4 kartu ringkasan metrik statistik teratas: **Total Nasabah**, **Nasabah Aktif**, **Nasabah Nonaktif**, dan **Total Saldo Tabungan**.
-  - Fitur pencarian cerdas terintegrasi (Nama, NIK, ID/Rekening, No. HP, Alamat, RT/RW, Kontak) dengan tombol hapus pencarian (*clear button* `X`).
-  - Penambahan filter Kategori Nasabah (*Rumah Tangga/Individu*, *Sekolah*, *Instansi*), filter Status Akun, dan tombol *Reset Filter*.
+  - Fitur pencarian cerdas terintegrasi (Nama, NIK, ID/Rekening, No. HP, Alamat, RT/RW, Kontak) dengan tombol hapus pencarian (_clear button_ `X`).
+  - Penambahan filter Kategori Nasabah (_Rumah Tangga/Individu_, _Sekolah_, _Instansi_), filter Status Akun, dan tombol _Reset Filter_.
 - **Optimasi Performa Query Database**:
-  - Menghilangkan *N+1 query overhead* pada kalkulasi saldo dan transaksi nasabah dengan menerapkan subquery agregasi terpadu dalam satu kali eksekusi database.
+  - Menghilangkan _N+1 query overhead_ pada kalkulasi saldo dan transaksi nasabah dengan menerapkan subquery agregasi terpadu dalam satu kali eksekusi database.
 
-### 🛡️ Penguatan Keamanan, Validasi, & Pengujian Otomatis
+### Penguatan Keamanan, Validasi, & Pengujian Otomatis
+
 - **Validasi Fleksibel RT/RW & Type Coercion**:
-  - Memperbarui skema Zod nasabah agar mendukung input nomor RT dan RW dengan rentang 1 hingga 3 digit (misal: RT 6, RW 03, RT 105) dengan *numeric coercion* otomatis antara tipe data string dan number.
+  - Memperbarui skema Zod nasabah agar mendukung input nomor RT dan RW dengan rentang 1 hingga 3 digit (misal: RT 6, RW 03, RT 105) dengan _numeric coercion_ otomatis antara tipe data string dan number.
 - **Keamanan & Rate Limiting**:
-  - Penerapan middleware rate limiting untuk memproteksi endpoint autentikasi `/api/v1/auth/login` dari upaya *brute-force* (HTTP 429 Too Many Requests).
-  - Sanitasi karakter formula pada ekspor spreadsheet ExcelJS guna mencegah eksploitasi *formula injection*.
-  - Pengamanan mutasi saldo secara atomik (*atomic transaction* dan *balance guard*) untuk menjamin saldo tabungan nasabah tidak dapat menjadi minus.
+  - Penerapan middleware rate limiting untuk memproteksi endpoint autentikasi `/api/v1/auth/login` dari upaya _brute-force_ (HTTP 429 Too Many Requests).
+  - Sanitasi karakter formula pada ekspor spreadsheet ExcelJS guna mencegah eksploitasi _formula injection_.
+  - Pengamanan mutasi saldo secara atomik (_atomic transaction_ dan _balance guard_) untuk menjamin saldo tabungan nasabah tidak dapat menjadi minus.
 - **Ekspansi Suite Pengujian Otomatis Vitest**:
   - Perluasan rangkaian pengujian otomatis pada `backend/tests/` menjadi **7 test files** dengan **41 skenario pengujian** (autentikasi, security hardening, master harga, transaksi multi-item, validasi RT/RW nasabah, dashboard, dan laporan) dengan status 100% lulus.
 
@@ -104,7 +111,8 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## [v2.0.0] - 2026-09-08 (Hono Web Framework Architecture & Frontend Alignment)
 
-### 🚀 Modernisasi Arsitektur Backend & Penyelarasan Frontend
+### Modernisasi Arsitektur Backend & Penyelarasan Frontend
+
 - **Implementasi Penuh Backend TypeScript + Hono**:
   - Menggantikan backend Python + FastAPI secara total dengan **Hono Web Application Framework** v4 (`@hono/node-server`) berbasis Node.js 20+ dan TypeScript ESM.
   - Implementasi struktur modular: `core` (database client `@libsql/client` dengan transaksi atomik `TxExecutor`, security bcrypt & JWT), `db` (migrasi DDL & seeding otomatis), `middleware` (auth JWT, role guard, central error handler), `schemas` (validasi Zod terpusat), `services` (transaksi atomik, sequence generator, balance guard, generator PDF & Excel), dan `routes` (`/auth`, `/admin/nasabah`, `/me`, `/admin/users`, `/master/categories`, `/master/waste-prices`, `/admin/transactions`, `/admin/reports`, `/admin/dashboard`).
@@ -122,15 +130,16 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ---
 
-## [v1.1.0] - 2026-09-08 (Production Ready)
+## [v1.1.0] - 2026-09-08 (Production Ready) - Backend Python + Frontend React
 
-### 📄 Dokumentasi & Spesifikasi Sistem
-- **Pembaruan Menyeluruh Dokumen PRD ([prd.md](prd.md)) ke Versi 1.1**:
+### Dokumentasi & Spesifikasi Sistem
+
+- **Pembaruan Menyeluruh ke Versi 1.1**:
   - Menyelaraskan status produk menjadi **Production Ready** (Lulus UAT dan Siap Operasional).
   - Memperbarui deskripsi stack teknologi aktual: React 18 + Vite + Tailwind CSS v3 + Zustand + TanStack Query v5 (Frontend) dan Python 3.10+ + FastAPI + SQLite3/Turso + ReportLab + OpenPyXL (Backend).
   - Mendokumentasikan fitur klasifikasi **Kategori Nasabah** (`Rumah Tangga/Individu`, `Sekolah`, `Instansi`) dan rincian alamat wilayah terstruktur (`rt`, `rw`, `kelurahan`, `kecamatan`, `kabupaten_kota`).
-  - Mendokumentasikan integrasi klausul persetujuan wajib **Syarat & Pernyataan (*Terms & Conditions*)** pada registrasi mandiri.
-  - Mendokumentasikan modul **Manajemen Pengguna (*User Management*)** pada menu `/admin/master/users` untuk kelola akun petugas admin dan reset password.
+  - Mendokumentasikan integrasi klausul persetujuan wajib **Syarat & Pernyataan (_Terms & Conditions_)** pada registrasi mandiri.
+  - Mendokumentasikan modul **Manajemen Pengguna (_User Management_)** pada menu `/admin/master/users` untuk kelola akun petugas admin dan reset password.
   - Memperbarui skema DDL fisik SQL dan model ERD sesuai implementasi riil pada [migrations.py](backend/app/db/migrations.py).
   - Menyempurnakan spesifikasi REST API backend untuk seluruh endpoint (`/auth`, `/admin/nasabah`, `/admin/users`, `/me`, `/master/categories`, `/master/waste-prices`, `/admin/transactions`, `/admin/reports`, `/admin/dashboard`).
   - Menyelaraskan rute frontend, hierarki layout (`PublicLayout`, `AdminLayout`, `NasabahLayout`, `PrintLayout`), dan komponen antarmuka.
@@ -139,10 +148,11 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## [v1.0.3] - 2026-09-06
 
-### 🔒 Autentikasi & Keamanan (Commit `fix login`)
+### Autentikasi & Keamanan (Commit `fix login`)
+
 - **Penyempurnaan Multi-Identifier Login**:
   - Memastikan endpoint `/api/v1/auth/login` mengenali berbagai pengenal akun secara instan: ID Nasabah (`bsuvhXXXX`), No. Rekening, NIK 16 digit, maupun Username Admin.
-  - Memperbaiki validasi status akun nonaktif agar mengembalikan pesan penolakan yang tepat dan deskriptif (*HTTP 400/403*).
+  - Memperbaiki validasi status akun nonaktif agar mengembalikan pesan penolakan yang tepat dan deskriptif (_HTTP 400/403_).
 - **Perbaikan Ganti Password Akun**:
   - Menambahkan alias field `current_password` di samping `old_password` pada skema Pydantic [ChangePasswordRequest](backend/app/schemas/auth.py) guna mengatasi kendala kompatibilitas payload dari form profil frontend.
   - Memastikan validasi kecocokan `new_password` dan `confirm_password` berjalan konsisten.
@@ -153,7 +163,8 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## [v1.0.2] - 2026-09-04
 
-### 📦 Dependensi & Otomasi Sistem (Commit `add requirements`)
+### Dependensi & Otomasi Sistem (Commit `add requirements`)
+
 - **Pembaruan Dependensi Backend ([requirements.txt](backend/requirements.txt))**:
   - Menambahkan dan mengunci versi pustaka pendukung ekspor dokumen: `reportlab` (PDF generation) dan `openpyxl` (Excel spreadsheet generation).
   - Menambahkan dependensi keamanan: `pyjwt` (JSON Web Tokens) dan `passlib[bcrypt]` / `bcrypt` (password hashing).
@@ -166,23 +177,25 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## [v1.0.1] - 2026-09-03
 
-### 📊 Generator Dokumen & Pelaporan
-- **Solusi Teks Terpotong pada Ekspor PDF ReportLab (*Anti-Text Clipping*)**:
+### Generator Dokumen & Pelaporan
+
+- **Solusi Teks Terpotong pada Ekspor PDF ReportLab (_Anti-Text Clipping_)**:
   - Mengonversi seluruh sel data tabel laporan transaksi, rekapitulasi sampah, daftar nasabah, dan master harga dari teks string biasa menjadi komponen `Paragraph`.
-  - Menerapkan penataan sel vertikal ke atas (`VALIGN: TOP`) agar data dengan teks panjang (nama lengkap, rincian alamat domisili, atau catatan transaksi) otomatis membungkus (*text-wrapping*) ke baris bawah tanpa terpotong batas kolom tabel.
+  - Menerapkan penataan sel vertikal ke atas (`VALIGN: TOP`) agar data dengan teks panjang (nama lengkap, rincian alamat domisili, atau catatan transaksi) otomatis membungkus (_text-wrapping_) ke baris bawah tanpa terpotong batas kolom tabel.
   - Membedakan orientasi halaman: **PDF Landscape A4** untuk Laporan Transaksi Tabungan (karena memiliki banyak kolom) dan **PDF Portrait A4** untuk Laporan Rekapitulasi, Nasabah & Saldo, dan Master Harga.
 - **Penyempurnaan Ekspor Spreadsheet Excel (OpenPyXL)**:
-  - Menerapkan penyesuaian lebar kolom otomatis (*auto-fit column width*) berdasarkan panjang teks maksimal per kolom.
+  - Menerapkan penyesuaian lebar kolom otomatis (_auto-fit column width_) berdasarkan panjang teks maksimal per kolom.
   - Menambahkan header korporat hijau BSU Villa Harmonis, border sel tipis yang rapi, pemformatan angka Rupiah (`Rp #,##0`), serta baris akumulasi total kalkulasi.
 - **Pengujian Penerimaan Pengguna ([UAT.md](UAT.md))**:
-  - Penyusunan dokumen User Acceptance Testing lengkap berisi **37 Skenario Kasus Uji** pada 8 Modul operasional sistem dengan tingkat kelulusan 100% pada kategori kritis (*Critical Severity*).
+  - Penyusunan dokumen User Acceptance Testing lengkap berisi **37 Skenario Kasus Uji** pada 8 Modul operasional sistem dengan tingkat kelulusan 100% pada kategori kritis (_Critical Severity_).
 
 ---
 
 ## [v1.0.0] - 2026-09-02 (Initial Stable Release)
 
-### ✨ Peluncuran Fitur Inti Operasional
-- **Portal Nasabah Mandiri (*Self-Service*)**:
+### Peluncuran Fitur Inti Operasional
+
+- **Portal Nasabah Mandiri (_Self-Service_)**:
   - Dashboard nasabah interaktif menampilkan saldo tabungan terkini, total setoran (Rp), total penarikan (Rp), dan 5 mutasi terakhir.
   - Menu Riwayat Tabungan (`/riwayat`) untuk melihat seluruh histori transaksi setor/tarik.
   - Fitur cetak dan unduh struk bukti transaksi digital dalam format **PDF A5** langsung dari akun nasabah.
@@ -194,17 +207,18 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
   - Penyimpanan presisi timbangan sampah dalam gram integer (`weight_gram`).
   - Validasi saldo seketika untuk penarikan tunai guna mencegah saldo tabungan bernilai negatif.
   - Penomoran transaksi unik otomatis per hari kalender: `TRX-YYYYMMDD-XXXX`.
-  - Transaksi bersifat final (*immutable*) dengan pembaruan saldo seketika (*atomic running balance*).
+  - Transaksi bersifat final (_immutable_) dengan pembaruan saldo seketika (_atomic running balance_).
 - **Struk Bukti Transaksi Resmi**:
   - Halaman bukti transaksi dengan tata letak struk cetak kasir/bank sampah.
   - Ekspor berkas **PDF A5** dengan informasi lengkap nasabah, jenis mutasi, detail sampah/nominal, saldo akhir, dan catatan.
-  - Proteksi kepemilikan: Nasabah hanya dapat membuka struk transaksinya sendiri (*HTTP 403 Forbidden* jika mengakses struk nasabah lain).
+  - Proteksi kepemilikan: Nasabah hanya dapat membuka struk transaksinya sendiri (_HTTP 403 Forbidden_ jika mengakses struk nasabah lain).
 
 ---
 
 ## [v0.9.0] - 2026-08-28 (Beta / Second Commit)
 
-### 👥 Manajemen Pengguna & Nasabah Lanjutan
+### Manajemen Pengguna & Nasabah Lanjutan
+
 - **Penyempurnaan Form Registrasi Nasabah**:
   - Penambahan klasifikasi `nasabah_category` (`Rumah Tangga/Individu`, `Sekolah`, `Instansi`).
   - Penambahan kolom wilayah: `rt`, `rw`, `kelurahan`, `kecamatan`, dan `kabupaten_kota`.
@@ -214,19 +228,20 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
   - Pembuatan endpoint backend `/api/v1/admin/users` untuk pencarian, filter peran, dan filter status user.
   - Halaman antarmuka antarpengguna `UserManagementPage.jsx` dengan tab peran `ALL`, `ADMIN`, dan `NASABAH`.
   - Fitur penambahan akun petugas baru oleh administrator.
-  - Fitur *Reset Password* pengguna oleh administrator.
-  - Fitur *Toggle Status* aktif/nonaktif akun petugas.
+  - Fitur _Reset Password_ pengguna oleh administrator.
+  - Fitur _Toggle Status_ aktif/nonaktif akun petugas.
 - **Modul Manajemen Nasabah oleh Admin (`/admin/nasabah`)**:
-  - Daftar nasabah dengan pencarian cepat (*fuzzy search* nama, NIK, ID, nomor HP, kelurahan, kecamatan).
+  - Daftar nasabah dengan pencarian cepat (_fuzzy search_ nama, NIK, ID, nomor HP, kelurahan, kecamatan).
   - Halaman detail nasabah (`NasabahDetailPage.jsx`) dengan tab profil dan riwayat transaksi.
-  - Form edit nasabah yang mengizinkan koreksi NIK (dengan validasi anti-duplikasi), nomor HP, alamat, dan kategori, sementara ID Nasabah/No. Rekening terkunci permanen (*read-only*).
-  - Pintasan cepat (*quick action*) untuk langsung mencatat setor atau tarik tunai bagi nasabah bersangkutan.
+  - Form edit nasabah yang mengizinkan koreksi NIK (dengan validasi anti-duplikasi), nomor HP, alamat, dan kategori, sementara ID Nasabah/No. Rekening terkunci permanen (_read-only_).
+  - Pintasan cepat (_quick action_) untuk langsung mencatat setor atau tarik tunai bagi nasabah bersangkutan.
 
-### 🏷️ Master Kategori & Harga Sampah Dinamis
+### Master Kategori & Harga Sampah Dinamis
+
 - **Redesain Skema Kategori & Harga**:
   - Melepas kolom `code` dari tabel `waste_categories` agar kategori murni mendefinisikan jenis bahan (Plastik, Kertas, Besi, Kaca, Minyak Jelantah).
   - Menambahkan kolom `price_code`, `group_name`, dan `example_items` pada tabel `waste_price_masters` untuk fleksibilitas katalog harga sesuai ketetapan Bank Sampah Pusat.
-  - Mengimplementasikan aturan bisnis *auto-deactivation*: Penetapan harga aktif baru secara otomatis menonaktifkan harga aktif sebelumnya pada kategori yang sama.
+  - Mengimplementasikan aturan bisnis _auto-deactivation_: Penetapan harga aktif baru secara otomatis menonaktifkan harga aktif sebelumnya pada kategori yang sama.
   - Menambahkan relasi `price_id` pada tabel `transactions`.
 - **Komponen Autocomplete pada Transaksi**:
   - Pengembangan komponen antarmuka `AutocompleteSelect.jsx`.
@@ -237,7 +252,8 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## [v0.1.0] - 2026-08-20 (Alpha / First Commit)
 
-### 🚀 Inisialisasi Arsitektur & Fondasi Sistem
+### Inisialisasi Arsitektur & Fondasi Sistem
+
 - **Struktur Repositori Monorepo**:
   - Direktori `backend/`: REST API berbasis FastAPI, Pydantic, dan Uvicorn.
   - Direktori `frontend/`: Single Page Application (SPA) berbasis React 18 dan Vite.
@@ -245,11 +261,11 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
   - Pembuatan skrip migrasi awal DDL SQL [migrations.py](backend/app/db/migrations.py).
   - Tabel `account_sequences` untuk penomoran rekening otomatis `bsuvh0000` s/d `bsuvh9999`.
   - Tabel dasar: `nasabah`, `users`, `waste_categories`, `waste_price_masters`, `waste_price_histories`, dan `transactions`.
-  - Skrip *database seeder* [seed.py](backend/app/db/seed.py) untuk akun administrator awal (`admin` / `AdminPassword123!`) dan 5 kategori sampah contoh dengan tarif aktif.
+  - Skrip _database seeder_ [seed.py](backend/app/db/seed.py) untuk akun administrator awal (`admin` / `AdminPassword123!`) dan 5 kategori sampah contoh dengan tarif aktif.
 - **Autentikasi Awal**:
   - Implementasi enkripsi password Bcrypt dan token otorisasi JWT.
   - Rute publik `/login` dan `/registrasi`.
 - **Dokumentasi Awal**:
-  - Dokumen kebutuhan awal [prd.md](prd.md) Versi 1.0.
-  - Dokumen desain teknis antarmuka [Design.md](Design.md).
-  - Panduan operasional [README.md](README.md).
+  - Dokumen kebutuhan awal Versi 1.0.
+  - Dokumen desain teknis antarmuka.
+  - Panduan operasional.
