@@ -49,7 +49,9 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 - **Agregasi Berbasis `transaction_items` pada Dashboard Admin & Nasabah**:
   - Memperbaiki query SQL agregasi berat sampah per kelompok/kategori sampah agar membaca rincian dari tabel `transaction_items` (serta fallback transaksi historis tunggal dari tabel `transactions`).
   - Menyelesaikan masalah ketidaksinkronan di mana transaksi setor multi-item (yang memiliki `transactions.category_id = NULL`) sebelumnya terlewat dari perhitungan distribusi per kategori.
-  - Akumulasi total kilogram dan persentase kontribusi per kategori sampah kini 100% sinkron dan identik dengan metrik *Total Sampah Terkumpul* pada dashboard.
+- **Penyaringan Kategori Tanpa Transaksi (Hanya Kategori Aktif > 0 Kg)**:
+  - Mengeliminasi kelompok sampah yang belum pernah disetorkan (0 Kg) dari daftar kartu *Distribusi Berat Sampah per Kategori* pada dashboard admin maupun nasabah via filter `HAVING total_weight_gram > 0` dan validasi komponen UI.
+  - Kartu distribusi kini berfokus secara ringkas dan bersih hanya pada jenis sampah yang benar-benar telah memiliki transaksi penyetoran.
 
 ---
 

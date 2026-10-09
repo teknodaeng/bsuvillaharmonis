@@ -62,7 +62,7 @@ export class DashboardService {
         COALESCE(COUNT(DISTINCT items.transaction_id), 0) as transaction_count,
         COALESCE(SUM(items.amount), 0) as total_amount
       FROM waste_categories c
-      LEFT JOIN (
+      JOIN (
         SELECT ti.category_id, ti.transaction_id, ti.weight_gram, ti.amount
         FROM transaction_items ti
         JOIN transactions t ON t.id = ti.transaction_id AND t.type = 'SETOR'
@@ -73,8 +73,8 @@ export class DashboardService {
           AND t.category_id IS NOT NULL 
           AND t.id NOT IN (SELECT DISTINCT transaction_id FROM transaction_items)
       ) items ON items.category_id = c.id
-      WHERE c.is_active = 1 OR items.category_id IS NOT NULL
       GROUP BY c.id, c.name
+      HAVING total_weight_gram > 0
       ORDER BY total_weight_gram DESC, c.name ASC`
     );
 
@@ -168,6 +168,7 @@ export class DashboardService {
           AND t.id NOT IN (SELECT DISTINCT transaction_id FROM transaction_items)
       ) items ON items.category_id = c.id
       GROUP BY c.id, c.name
+      HAVING total_weight_gram > 0
       ORDER BY total_weight_gram DESC, c.name ASC`,
       [nasabahId, nasabahId]
     );

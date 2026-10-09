@@ -225,85 +225,93 @@ export const NasabahDashboardPage = () => {
           </div>
         }
       >
-        {data?.categories_weight && data.categories_weight.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {data.categories_weight.map((cat) => (
-              <div
-                key={cat.category_id}
-                className="p-4 rounded-xl border border-gray-100 bg-white hover:border-teal-200 hover:shadow-xs transition-all duration-200 flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0" />
-                      <h4
-                        className="font-semibold text-gray-900 text-sm truncate"
-                        title={cat.category_name}
-                      >
-                        {cat.category_name}
-                      </h4>
-                    </div>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 shrink-0 border border-teal-200/50 font-mono">
-                      {cat.percentage}%
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex items-baseline justify-between">
-                    <div>
-                      <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
-                        {cat.total_weight_kg.toLocaleString("id-ID", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                      <span className="text-xs font-bold text-teal-600 uppercase ml-1.5">
-                        Kg
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      {cat.transaction_count}x disetor
-                    </span>
-                  </div>
-
-                  {/* Visual progress bar */}
-                  <div className="w-full bg-gray-100 rounded-full h-2 mt-2.5 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-teal-500 to-emerald-600 h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, Math.max(cat.total_weight_kg > 0 ? 4 : 0, cat.percentage))}%`,
-                      }}
-                    />
-                  </div>
+        {(() => {
+          const activeCategories = (data?.categories_weight || []).filter(
+            (cat) => Number(cat.total_weight_kg) > 0 || Number(cat.total_weight_gram) > 0
+          );
+          if (activeCategories.length === 0) {
+            return (
+              <div className="text-center py-8 px-4 bg-gray-50/60 rounded-xl border border-dashed border-gray-200">
+                <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 text-teal-600 flex items-center justify-center mb-3">
+                  <Scale className="w-6 h-6" />
                 </div>
-
-                <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                  <span>Hasil Tabungan:</span>
-                  <span className="font-bold text-emerald-700">{cat.total_amount_formatted}</span>
+                <h4 className="text-sm font-semibold text-gray-800">
+                  Belum Ada Sampah yang Disetorkan
+                </h4>
+                <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                  Pilah sampah anorganik Anda di rumah dan setorkan ke Bank Sampah Villa Harmonis
+                  untuk mengonversinya menjadi saldo tabungan!
+                </p>
+                <div className="mt-4">
+                  <Link to="/harga-sampah">
+                    <Button variant="outline" size="xs" icon={DollarSign}>
+                      Cek Katalog Harga Sampah
+                    </Button>
+                  </Link>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 px-4 bg-gray-50/60 rounded-xl border border-dashed border-gray-200">
-            <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 text-teal-600 flex items-center justify-center mb-3">
-              <Scale className="w-6 h-6" />
+            );
+          }
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {activeCategories.map((cat) => (
+                <div
+                  key={cat.category_id}
+                  className="p-4 rounded-xl border border-gray-100 bg-white hover:border-teal-200 hover:shadow-xs transition-all duration-200 flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0" />
+                        <h4
+                          className="font-semibold text-gray-900 text-sm truncate"
+                          title={cat.category_name}
+                        >
+                          {cat.category_name}
+                        </h4>
+                      </div>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 shrink-0 border border-teal-200/50 font-mono">
+                        {cat.percentage}%
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex items-baseline justify-between">
+                      <div>
+                        <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                          {cat.total_weight_kg.toLocaleString("id-ID", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                        <span className="text-xs font-bold text-teal-600 uppercase ml-1.5">
+                          Kg
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500 font-medium">
+                        {cat.transaction_count}x disetor
+                      </span>
+                    </div>
+
+                    {/* Visual progress bar */}
+                    <div className="w-full bg-gray-100 rounded-full h-2 mt-2.5 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-teal-500 to-emerald-600 h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(100, Math.max(cat.total_weight_kg > 0 ? 4 : 0, cat.percentage))}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                    <span>Hasil Tabungan:</span>
+                    <span className="font-bold text-emerald-700">{cat.total_amount_formatted}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <h4 className="text-sm font-semibold text-gray-800">
-              Belum Ada Sampah yang Disetorkan
-            </h4>
-            <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-              Pilah sampah anorganik Anda di rumah dan setorkan ke Bank Sampah Villa Harmonis
-              untuk mengonversinya menjadi saldo tabungan!
-            </p>
-            <div className="mt-4">
-              <Link to="/harga-sampah">
-                <Button variant="outline" size="xs" icon={DollarSign}>
-                  Cek Katalog Harga Sampah
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </Card>
 
       {/* Recent Transactions Table */}
