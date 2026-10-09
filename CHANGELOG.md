@@ -45,6 +45,12 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 - **Sinkronisasi Jam Cetak Struk dengan Jam Transaksi**:
   - Memperbaiki parameter `printed_at` / label *"Dicetak pada:"* pada generator PDF [receiptService.ts](backend/src/services/receiptService.ts) dan halaman web [ReceiptPage.jsx](frontend/src/features/receipts/ReceiptPage.jsx) agar menampilkan waktu transaksi (`formatDateTime(tx.transaction_date)`), bukan waktu saat tombol cetak ditekan.
 
+### ⚖️ Perbaikan Sinkronisasi Distribusi Berat Sampah per Kategori ([dashboardService.ts](backend/src/services/dashboardService.ts))
+- **Agregasi Berbasis `transaction_items` pada Dashboard Admin & Nasabah**:
+  - Memperbaiki query SQL agregasi berat sampah per kelompok/kategori sampah agar membaca rincian dari tabel `transaction_items` (serta fallback transaksi historis tunggal dari tabel `transactions`).
+  - Menyelesaikan masalah ketidaksinkronan di mana transaksi setor multi-item (yang memiliki `transactions.category_id = NULL`) sebelumnya terlewat dari perhitungan distribusi per kategori.
+  - Akumulasi total kilogram dan persentase kontribusi per kategori sampah kini 100% sinkron dan identik dengan metrik *Total Sampah Terkumpul* pada dashboard.
+
 ---
 
 ## [v2.1.0] - 2026-09-14 (Multi-Item Deposit, Receipt Printing, Nasabah List Hardening, & Vitest Expansion)

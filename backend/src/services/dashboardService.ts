@@ -58,12 +58,22 @@ export class DashboardService {
       `SELECT 
         c.id as category_id,
         c.name as category_name,
-        COALESCE(SUM(t.weight_gram), 0) as total_weight_gram,
-        COALESCE(COUNT(t.id), 0) as transaction_count,
-        COALESCE(SUM(t.amount), 0) as total_amount
+        COALESCE(SUM(items.weight_gram), 0) as total_weight_gram,
+        COALESCE(COUNT(DISTINCT items.transaction_id), 0) as transaction_count,
+        COALESCE(SUM(items.amount), 0) as total_amount
       FROM waste_categories c
-      LEFT JOIN transactions t ON t.category_id = c.id AND t.type = 'SETOR'
-      WHERE c.is_active = 1 OR t.id IS NOT NULL
+      LEFT JOIN (
+        SELECT ti.category_id, ti.transaction_id, ti.weight_gram, ti.amount
+        FROM transaction_items ti
+        JOIN transactions t ON t.id = ti.transaction_id AND t.type = 'SETOR'
+        UNION ALL
+        SELECT t.category_id, t.id as transaction_id, t.weight_gram, t.amount
+        FROM transactions t
+        WHERE t.type = 'SETOR' 
+          AND t.category_id IS NOT NULL 
+          AND t.id NOT IN (SELECT DISTINCT transaction_id FROM transaction_items)
+      ) items ON items.category_id = c.id
+      WHERE c.is_active = 1 OR items.category_id IS NOT NULL
       GROUP BY c.id, c.name
       ORDER BY total_weight_gram DESC, c.name ASC`
     );
@@ -141,15 +151,25 @@ export class DashboardService {
       `SELECT 
         c.id as category_id,
         c.name as category_name,
-        COALESCE(SUM(t.weight_gram), 0) as total_weight_gram,
-        COUNT(t.id) as transaction_count,
-        COALESCE(SUM(t.amount), 0) as total_amount
-      FROM transactions t
-      JOIN waste_categories c ON t.category_id = c.id
-      WHERE t.nasabah_id = ? AND t.type = 'SETOR'
+        COALESCE(SUM(items.weight_gram), 0) as total_weight_gram,
+        COALESCE(COUNT(DISTINCT items.transaction_id), 0) as transaction_count,
+        COALESCE(SUM(items.amount), 0) as total_amount
+      FROM waste_categories c
+      JOIN (
+        SELECT ti.category_id, ti.transaction_id, ti.weight_gram, ti.amount
+        FROM transaction_items ti
+        JOIN transactions t ON t.id = ti.transaction_id AND t.type = 'SETOR' AND t.nasabah_id = ?
+        UNION ALL
+        SELECT t.category_id, t.id as transaction_id, t.weight_gram, t.amount
+        FROM transactions t
+        WHERE t.type = 'SETOR' 
+          AND t.nasabah_id = ?
+          AND t.category_id IS NOT NULL 
+          AND t.id NOT IN (SELECT DISTINCT transaction_id FROM transaction_items)
+      ) items ON items.category_id = c.id
       GROUP BY c.id, c.name
       ORDER BY total_weight_gram DESC, c.name ASC`,
-      [nasabahId]
+      [nasabahId, nasabahId]
     );
 
     const nasabahCategoriesWeight = nasabahCategoryRows.map((cat: any) => {
