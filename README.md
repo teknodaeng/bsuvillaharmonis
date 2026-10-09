@@ -46,8 +46,8 @@ Aplikasi web modern dan terpadu untuk pengelolaan operasional **Bank Sampah Unit
 - **Pilihan Waktu & Tanggal Transaksi Fleksibel (Backdating Support):**
   - Input tanggal dan waktu transaksi (`datetime-local`) terintegrasi untuk transaksi Setor Sampah maupun Tarik Tunai.
   - Nilai awal otomatis terisi waktu saat ini (*default now*), dilengkapi tombol aksi cepat *"Set ke Waktu Sekarang"*.
-  - Teks bantu preview format waktu Indonesia (hari, tanggal, jam WITA) secara real-time.
   - Mendukung pencatatan transaksi susulan / tanggal lampau (*backdate*) dengan penomoran transaksi (`TRX-YYYYMMDD-XXXX`) dan urutan kronologis buku tabungan yang sinkron otomatis.
+  - Tanggal dan jam yang dipilih dicatat secara final dan presisi ke database (`transaction_date`, `created_at` transaksi, serta `created_at` rincian item) tanpa pergeseran zona waktu.
 - **Setor Sampah (Multi-Item Waste Deposit):**
   - Pemilihan nasabah aktif dengan **autocomplete search suggestions**.
   - **Dukungan Banyak Jenis Sampah Sekaligus**: Petugas dapat menambahkan lebih dari 1 kelompok sampah berbeda dalam satu transaksi setor (dinamis tambah/hapus baris item).

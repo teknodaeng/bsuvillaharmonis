@@ -227,8 +227,8 @@ export const TransactionCreatePage = () => {
       setErrorMessage("Silakan tentukan tanggal dan waktu transaksi.");
       return;
     }
-    const parsedDate = new Date(transactionDate);
-    if (isNaN(parsedDate.getTime())) {
+    const formattedTxDate = dayjs(transactionDate).format("YYYY-MM-DD HH:mm:ss");
+    if (!dayjs(transactionDate).isValid() || formattedTxDate === "Invalid Date") {
       setErrorMessage("Format tanggal dan waktu transaksi tidak valid.");
       return;
     }
@@ -252,7 +252,7 @@ export const TransactionCreatePage = () => {
 
     createTxMutation.mutate({
       nasabah_id: String(selectedNasabahId),
-      transaction_date: parsedDate.toISOString(),
+      transaction_date: formattedTxDate,
       type: "SETOR",
       items: setorItems.map((it) => ({
         price_id: String(it.price_id),
@@ -274,8 +274,8 @@ export const TransactionCreatePage = () => {
       setErrorMessage("Silakan tentukan tanggal dan waktu transaksi.");
       return;
     }
-    const parsedDate = new Date(transactionDate);
-    if (isNaN(parsedDate.getTime())) {
+    const formattedTxDate = dayjs(transactionDate).format("YYYY-MM-DD HH:mm:ss");
+    if (!dayjs(transactionDate).isValid() || formattedTxDate === "Invalid Date") {
       setErrorMessage("Format tanggal dan waktu transaksi tidak valid.");
       return;
     }
@@ -290,7 +290,7 @@ export const TransactionCreatePage = () => {
 
     createTxMutation.mutate({
       nasabah_id: String(selectedNasabahId),
-      transaction_date: parsedDate.toISOString(),
+      transaction_date: formattedTxDate,
       type: "TARIK",
       amount: numericWithdraw,
       notes: tarikNotes || null,

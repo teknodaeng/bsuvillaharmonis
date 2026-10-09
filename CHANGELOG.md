@@ -33,9 +33,10 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
   - Teks bantu preview waktu terformat lokal bahasa Indonesia secara seketika (*real-time*), misalnya: `Jumat, 09 Oktober 2026 • 18:25 WITA`.
   - Penanda waktu transaksi pada kotak *Kalkulasi Otomatis Setoran* dan *Kalkulasi Saldo Penarikan*.
   - Validasi frontend yang memastikan format tanggal dan waktu valid sebelum payload dikirimkan ke server.
-- **Dukungan Pencatatan Transaksi Susulan (Backdating) & Normalisasi Backend ([transactionService.ts](backend/src/services/transactionService.ts))**:
-  - Validasi dan normalisasi nilai `data.transaction_date` ke format standar ISO 8601 di backend.
+- **Pencatatan Presisi ke Basis Data & Dukungan Transaksi Susulan ([transactionService.ts](backend/src/services/transactionService.ts))**:
+  - Tanggal dan jam yang dipilih pada formulir dicatat secara presisi dan verbatim ke dalam basis data (`transactions.transaction_date`, `transactions.created_at`, serta `transaction_items.created_at`) menggunakan format standar `YYYY-MM-DD HH:mm:ss`, mencegah pergeseran jam akibat konversi UTC.
   - Penyelarasan generator nomor transaksi (`generateTransactionNo`) yang membaca tanggal transaksi terpilih, sehingga transaksi tanggal lampau/susulan menghasilkan nomor `TRX-YYYYMMDD-XXXX` yang konsisten dengan tanggal pelaksanaannya.
+  - Penyelarasan fungsi pemformatan tanggal ([formatting.ts](backend/src/utils/formatting.ts) & [formatting.js](frontend/src/utils/formatting.js)) untuk parsing deterministik format lokal tanpa distorsi zona waktu.
   - Data transaksi tersimpan dan terurut secara kronologis pada buku tabungan nasabah, riwayat mutasi, serta laporan operasional.
 
 ### 🧾 Penyempurnaan Tata Letak & Jam Cetak Bukti Transaksi (Struk & PDF)
