@@ -10,7 +10,7 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## Rekapitulasi Versi Rilis Uji Coba
 
-- [v2.2.0 (Current)](#v220---2026-10-09-custom-transaction-date-time-picker-backdating-support--receipt-layout-centering) — Pilihan Tanggal & Waktu Transaksi Fleksibel, Dukungan Transaksi Susulan (Backdate), Penyelarasan Jam Cetak Bukti Transaksi, & Tata Letak Footer Struk di Tengah
+- [v2.2.0 (Current)](#v220---2026-10-09-custom-transaction-date-time-picker-changelog-page--app-version-receipt-centering--category-filter) — Pilihan Tanggal & Waktu Transaksi Fleksibel, Halaman Catatan Perubahan (Changelog) & Penampil Versi Aplikasi, Penyelarasan Struk Kasir & PDF, serta Sinkronisasi Distribusi Kategori
 - [v2.1.0](#v210---2026-09-14-multi-item-deposit-receipt-printing-nasabah-list-hardening--vitest-expansion) — Setor Sampah Multi-Item, Desain Struk Kasir & PDF, Perbaikan Daftar Nasabah, Penguatan Keamanan, & Ekspansi Test Suite Vitest
 - [v2.0.0 (Hono Architecture)](#v200---2026-09-08-hono-web-framework-architecture--frontend-alignment) — Modernisasi Arsitektur Backend ke Hono Web Application Framework (TypeScript)
 - [v1.1.0](#v110---2026-09-08-production-ready) — Pembaruan, Penyelarasan Dokumen Spesifikasi Sistem & Validasi UAT 100%
@@ -23,7 +23,27 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ---
 
-## [v2.2.0] - 2026-10-09 (Custom Transaction Date-Time Picker, Backdating Support, & Receipt Layout Centering)
+## [v2.2.0] - 2026-10-09 (Custom Transaction Date-Time Picker, Changelog Page & App Version, Receipt Centering, & Category Filter)
+
+### Fitur Baru: Halaman Catatan Perubahan (Changelog) & Penampil Versi Aplikasi
+
+- **Halaman Interaktif Catatan Perubahan ([ChangelogPage.jsx](frontend/src/features/changelog/ChangelogPage.jsx))**:
+  - Halaman khusus `/admin/changelog` (Admin) dan `/changelog` (Nasabah) yang menyajikan rekapitulasi riwayat rilis, versi aplikasi terkini (`v2.2.0`), tanggal rilis, dan ringkasan fitur secara interaktif.
+  - Fitur pencarian perubahan (*real-time keyword search*) untuk mencari fitur, perbaikan, atau nomor rilis secara instan.
+  - Tab kategori perubahan (*Semua*, *Fitur Baru*, *Penyempurnaan*, *Perbaikan Bug*) untuk mempermudah navigasi riwayat.
+  - Kartu rilis akordeon yang dapat dibuka/tutup dengan badge status versi (*Versi Terkini*, *Major Update*, *Minor*, *Patch*).
+  - Tampilan hero banner modern dan responsif untuk desktop maupun perangkat seluler.
+- **Integrasi Menu Navigasi Sidebar Admin ([Sidebar.jsx](frontend/src/components/layout/Sidebar.jsx))**:
+  - Penambahan menu baru **"Catatan Perubahan"** di sidebar admin dengan tautan langsung ke `/admin/changelog` dan ikon riwayat (`History`).
+  - Penambahan badge penampil versi aktif (`v2.2.0`) pada header sidebar admin di bawah judul sistem.
+- **Integrasi Tautan Footer Portal Nasabah ([NasabahLayout.jsx](frontend/src/components/layout/NasabahLayout.jsx))**:
+  - Penambahan tautan footer `Catatan Perubahan (Changelog)` ke `/changelog` di area footer portal mandiri nasabah.
+  - Penampil versi aplikasi (`v2.2.0`) berdampingan dengan hak cipta sistem di footer.
+- **Konfigurasi Routing & Proteksi Hak Akses ([AppRoutes.jsx](frontend/src/routes/AppRoutes.jsx) & [RoleGuard.jsx](frontend/src/routes/RoleGuard.jsx))**:
+  - Registrasi rute `/admin/changelog` dalam layout admin dan `/changelog` dalam layout nasabah.
+  - Penanganan pengalihan cerdas pada `RoleGuard`: jika admin membuka `/changelog`, otomatis dialihkan ke `/admin/changelog`, dan sebaliknya jika nasabah membuka `/admin/changelog`, dialihkan ke `/changelog`.
+- **Konstanta Terpusat Aplikasi ([app.js](frontend/src/constants/app.js))**:
+  - Pendefinisian `APP_VERSION = "2.2.0"` dan `APP_RELEASE_DATE = "09 Oktober 2026"` untuk sinkronisasi nilai versi di seluruh komponen frontend.
 
 ### Fitur Baru: Pilihan Tanggal & Waktu Transaksi (Catat Transaksi Baru)
 

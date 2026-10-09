@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -8,11 +8,12 @@ import {
   Tags,
   DollarSign,
   FileText,
+  History,
   LogOut,
   X,
 } from "lucide-react";
 import clsx from "clsx";
-import { APP_NAME, APP_TAGLINE } from "../../constants/app";
+import { APP_NAME, APP_TAGLINE, APP_VERSION } from "../../constants/app";
 import { useAuthStore } from "../../stores/authStore";
 import { useUIStore } from "../../stores/uiStore";
 
@@ -39,6 +40,7 @@ export const Sidebar = () => {
       ],
     },
     { label: "Laporan PDF & Excel", to: "/admin/laporan", icon: FileText },
+    { label: "Catatan Perubahan", to: "/admin/changelog", icon: History },
   ];
 
   return (
@@ -66,9 +68,18 @@ export const Sidebar = () => {
             </div>
             <div>
               <h2 className="text-sm font-bold text-white tracking-tight">{APP_NAME}</h2>
-              <p className="text-[10px] text-emerald-400 font-medium tracking-wide uppercase">
-                Panel Admin
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-[10px] text-emerald-400 font-medium tracking-wide uppercase">
+                  Panel Admin
+                </p>
+                <Link
+                  to="/admin/changelog"
+                  className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-750 border border-slate-750 transition-colors"
+                  title="Lihat Catatan Perubahan (Changelog)"
+                >
+                  v{APP_VERSION}
+                </Link>
+              </div>
             </div>
           </div>
           <button

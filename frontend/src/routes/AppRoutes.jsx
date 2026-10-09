@@ -29,6 +29,7 @@ import { NasabahTransactionHistoryPage } from "../features/transactions/NasabahT
 import { ReceiptPage } from "../features/receipts/ReceiptPage";
 import { ReportListPage } from "../features/reports/ReportListPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
+import { ChangelogPage } from "../features/changelog/ChangelogPage";
 
 const RootRedirect = () => {
   const { isAuthenticated, role } = useAuthStore();
@@ -62,6 +63,7 @@ export const AppRoutes = () => {
         <Route path="/riwayat" element={<NasabahTransactionHistoryPage />} />
         <Route path="/harga-sampah" element={<NasabahPriceListPage />} />
         <Route path="/profil" element={<ProfilePage />} />
+        <Route path="/changelog" element={<ChangelogPage />} />
       </Route>
 
       {/* Admin Portal Routes */}
@@ -85,6 +87,7 @@ export const AppRoutes = () => {
         <Route path="/admin/master/kategori" element={<CategoryListPage />} />
         <Route path="/admin/master/harga-sampah" element={<PriceListPage />} />
         <Route path="/admin/laporan" element={<ReportListPage />} />
+        <Route path="/admin/changelog" element={<ChangelogPage />} />
       </Route>
 
       {/* Print Receipts (Accessible by both roles with printable layout) */}
