@@ -6,6 +6,7 @@ Aplikasi web modern dan terpadu untuk pengelolaan operasional **Bank Sampah Unit
 
 ## 📑 Daftar Isi
 - [Fitur Utama](#-fitur-utama)
+- [Catatan Perubahan (Changelog)](#-catatan-perubahan-changelog)
 - [Teknologi & Arsitektur](#-teknologi--arsitektur)
 - [Struktur Proyek](#-struktur-proyek)
 - [Panduan Instalasi & Menjalankan Aplikasi](#-panduan-instalasi--menjalankan-aplikasi)
@@ -27,11 +28,13 @@ Aplikasi web modern dan terpadu untuk pengelolaan operasional **Bank Sampah Unit
     - Ringkasan metrik statistik (*Total Nasabah*, *Nasabah Aktif*, *Nasabah Nonaktif*, dan *Total Saldo Tabungan*).
     - Pencarian cepat komprehensif (Nama, NIK, ID/Rekening, No. HP, Alamat, RT/RW) dengan filter kategori nasabah dan status akun.
     - Verifikasi data, edit profil, pintasan langsung setor sampah, dan toggle aktif/nonaktif akun.
+  - **Menu Catatan Perubahan & Badge Versi**: Akses cepat ke halaman changelog melalui menu navigasi sidebar admin dan indikator versi aktif (`v2.2.0`) di header sidebar.
 - **Role Nasabah (Portal Nasabah Mandiri):**
-  - **Dashboard Mandiri**: Ringkasan saldo tabungan terkini, agregasi total berat sampah yang disetorkan (dalam kilogram per kategori), dan total transaksi.
+  - **Dashboard Mandiri**: Ringkasan saldo tabungan terkini, agregasi total berat sampah yang disetorkan (dalam kilogram per kategori dengan penyaringan kategori aktif > 0 kg), dan total transaksi.
   - **Riwayat Tabungan**: Melihat mutasi tabungan debit/kredit dan mengunduh bukti transaksi (struk digital PDF).
   - **Katalog Harga Sampah**: Daftar kelompok sampah dan harga per kg yang sedang berlaku aktif.
   - **Profil & Pengaturan Akun**: Edit data diri mandiri (Nama, No. KTP/NIK, No. HP, Alamat, RT/RW/Kelurahan/Kecamatan/Kota) dan ubah password akun.
+  - **Tautan Catatan Perubahan & Info Versi**: Akses ke halaman changelog melalui tautan footer portal nasabah dan informasi versi aplikasi (`v2.2.0`).
 
 ### 2. 📝 Registrasi Nasabah Baru
 - Pendaftaran mandiri publik maupun oleh petugas admin.
@@ -74,6 +77,30 @@ Aplikasi web modern dan terpadu untuk pengelolaan operasional **Bank Sampah Unit
 - **Laporan Daftar Nasabah & Saldo**: Rekap seluruh nasabah dan total kewajiban saldo tabungan (Export Excel & PDF Portrait A4).
 - **Laporan Master Harga Sampah**: Daftar tarif kelompok sampah terkini (Export Excel & PDF Portrait A4).
 - **Tata Letak & Keamanan Ekspor**: Semua sel tabel dibungkus rapi dengan PDFKit serta proteksi formula injection pada spreadsheet ExcelJS.
+
+### 6. 📜 Halaman Catatan Perubahan (Changelog) & Versi Aplikasi
+- **Halaman Interaktif Catatan Perubahan**:
+  - Halaman khusus `/admin/changelog` (Admin) dan `/changelog` (Nasabah) yang menampilkan versi rilis aktif sistem (`v2.2.0`), tanggal rilis, dan histori pembaruan secara lengkap dan rapi.
+  - Fitur pencarian perubahan seketika (*real-time keyword search*) untuk mencari fitur, perbaikan bug, atau nomor rilis secara instan.
+  - Tab kategori (*Semua*, *Fitur Baru*, *Penyempurnaan*, *Perbaikan Bug*) untuk navigasi riwayat yang mudah dan interaktif.
+  - Desain akordeon responsif dengan badge status rilis (*Versi Terkini*, *Major Update*, *Minor*, *Patch*).
+- **Navigasi Terintegrasi & Pengalihan Hak Akses (RoleGuard)**:
+  - Sidebar Dashboard Admin dilengkapi menu **Catatan Perubahan** berikon riwayat dan badge versi di header sidebar.
+  - Footer Dashboard Nasabah dilengkapi tautan ramah ke Catatan Perubahan dan badge versi.
+  - Proteksi rute cerdas via `RoleGuard` yang secara otomatis mengarahkan admin maupun nasabah ke layout dashboard masing-masing secara seamless.
+- **Sinkronisasi Metrik Distribusi Kategori Sampah**:
+  - Agregasi bobot sampah per kategori pada dashboard admin dan nasabah membaca tabel rincian `transaction_items`, menghasilkan angka yang 100% sinkron dengan Total Sampah Terkumpul.
+  - Eliminasi kategori bernilai 0 kg via query `HAVING total_weight_gram > 0` sehingga kartu distribusi fokus hanya pada jenis sampah yang aktif pernah disetorkan.
+
+---
+
+## 📝 Catatan Perubahan (Changelog)
+
+Riwayat pembaruan, penambahan fitur, penyempurnaan, dan perbaikan sistem terdokumentasi secara kronologis pada [CHANGELOG.md](CHANGELOG.md) dan dapat diakses langsung secara interaktif melalui antarmuka aplikasi:
+- **Versi Terkini**: `v2.2.0` (Rilis: 09 Oktober 2026)
+- **Portal Admin**: Menu navigasi **Catatan Perubahan** pada sidebar (`/admin/changelog`) serta badge versi di header sidebar.
+- **Portal Nasabah**: Tautan footer **Catatan Perubahan (Changelog)** (`/changelog`) serta informasi versi aplikasi di footer.
+- **Dokumentasi Lengkap**: Rincian teknis seluruh catatan rilis tersedia di [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -121,7 +148,8 @@ bsuvillaharmonis/
 ├── frontend/                       # Frontend Web App (React + Vite)
 │   ├── src/
 │   │   ├── components/             # Komponen UI umum (Button, Modal, Table, Sidebar, dll)
-│   │   ├── features/               # Halaman & fitur (auth, dashboard, transaksi multi-item, nasabah, reports, receipt)
+│   │   ├── constants/              # Konstanta aplikasi (app version & release date)
+│   │   ├── features/               # Halaman & fitur (auth, changelog, dashboard, transaksi multi-item, nasabah, reports, receipt)
 │   │   ├── routes/                 # Konfigurasi rute (AppRoutes, ProtectedRoute, RoleGuard)
 │   │   ├── services/               # Klien Axios API services
 │   │   └── stores/                 # State management auth & UI (Zustand)
@@ -129,6 +157,7 @@ bsuvillaharmonis/
 │   └── vite.config.js              # Konfigurasi Vite
 │
 ├── start.sh                        # Script praktis menjalankan Backend & Frontend sekaligus
+├── CHANGELOG.md                    # Catatan perubahan & riwayat versi sistem
 └── README.md                       # Dokumentasi sistem
 ```
 

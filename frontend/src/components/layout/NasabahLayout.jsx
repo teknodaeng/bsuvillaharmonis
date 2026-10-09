@@ -1,8 +1,8 @@
 import React from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { LayoutDashboard, History, DollarSign, User, LogOut } from "lucide-react";
 import clsx from "clsx";
-import { APP_NAME } from "../../constants/app";
+import { APP_NAME, APP_VERSION } from "../../constants/app";
 import { useAuthStore } from "../../stores/authStore";
 import { ToastContainer } from "../ui/Toast";
 
@@ -97,9 +97,23 @@ export const NasabahLayout = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200/80 py-4 text-center text-xs text-gray-400">
-        <div className="max-w-6xl mx-auto px-4">
-          &copy; {new Date().getFullYear()} {APP_NAME}. Tabungan Bank Sampah Lingkungan.
+      <footer className="bg-white border-t border-gray-200/80 py-4 text-xs text-gray-500">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          <div>
+            &copy; {new Date().getFullYear()} <strong className="text-gray-700">{APP_NAME}</strong>. Tabungan Bank Sampah Lingkungan.
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200/60">
+              v{APP_VERSION}
+            </span>
+            <Link
+              to="/changelog"
+              className="font-medium text-emerald-700 hover:text-emerald-800 hover:underline transition-colors flex items-center gap-1"
+              title="Lihat riwayat rilis dan catatan perubahan aplikasi"
+            >
+              Catatan Perubahan (Changelog)
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
