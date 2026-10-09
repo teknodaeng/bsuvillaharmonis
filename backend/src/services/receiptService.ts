@@ -23,8 +23,7 @@ export class ReceiptService {
       }
     }
 
-    const now = new Date();
-    const nowStr = formatDateTime(now);
+    const txDateFormatted = formatDateTime(tx.transaction_date);
 
     let detailData = null;
     if (tx.type === 'SETOR') {
@@ -81,7 +80,7 @@ export class ReceiptService {
       },
       notes: tx.notes || '-',
       footer: config.RECEIPT_FOOTER,
-      printed_at: nowStr,
+      printed_at: txDateFormatted,
     };
   }
 
@@ -288,19 +287,29 @@ export class ReceiptService {
       doc.y = sigLineY + 18;
       doc.moveDown(0.4);
 
-      // Footer
+      // Footer (ditempatkan di tengah selebar halaman)
+      const fullWidth = doc.page.width - 56;
+      doc.x = 28;
+      doc.y = sigLineY + 20;
+
       doc
         .fontSize(8)
         .font('Helvetica-Oblique')
         .fillColor('#6b7280')
-        .text(receipt.footer, { align: 'center' });
+        .text(receipt.footer, 28, doc.y, {
+          width: fullWidth,
+          align: 'center',
+        });
 
       doc.moveDown(0.3);
       doc
         .fontSize(7)
         .font('Helvetica')
         .fillColor('#9ca3af')
-        .text(`Dicetak pada: ${receipt.printed_at}`, { align: 'center' });
+        .text(`Dicetak pada: ${receipt.printed_at}`, 28, doc.y, {
+          width: fullWidth,
+          align: 'center',
+        });
 
       doc.end();
       } catch (err) {

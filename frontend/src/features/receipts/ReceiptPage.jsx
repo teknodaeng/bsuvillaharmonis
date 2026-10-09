@@ -262,7 +262,7 @@ export const ReceiptPage = () => {
 
           {receipt.printed_at && (
             <p className="text-[9px] text-gray-400 mt-5 font-mono">
-              Waktu Cetak: {receipt.printed_at}
+              Dicetak pada: {receipt.printed_at}
             </p>
           )}
         </div>

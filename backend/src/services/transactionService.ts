@@ -137,7 +137,16 @@ export class TransactionService {
       throw new AppError('Transaksi ditolak. Status nasabah nonaktif.', 400, 'NASABAH_INACTIVE');
     }
 
-    const txDate = data.transaction_date || new Date().toISOString();
+    let txDate: string;
+    if (data.transaction_date && typeof data.transaction_date === 'string' && data.transaction_date.trim()) {
+      const parsed = new Date(data.transaction_date.trim());
+      if (isNaN(parsed.getTime())) {
+        throw new AppError('Format tanggal/waktu transaksi tidak valid.', 400, 'INVALID_DATE');
+      }
+      txDate = parsed.toISOString();
+    } else {
+      txDate = new Date().toISOString();
+    }
 
     const txId = uuidv4();
     let categoryId: string | null = null;

@@ -13,7 +13,11 @@ import {
   User,
   Plus,
   Trash2,
+  Calendar,
+  Clock,
 } from "lucide-react";
+import dayjs from "dayjs";
+import "dayjs/locale/id";
 import { nasabahService } from "../../services/nasabahService";
 import { priceService } from "../../services/priceService";
 import { transactionService } from "../../services/transactionService";
@@ -38,6 +42,9 @@ export const TransactionCreatePage = () => {
   const [activeTab, setActiveTab] = useState("SETOR"); // 'SETOR' | 'TARIK'
   const [selectedNasabahId, setSelectedNasabahId] = useState(
     location.state?.nasabahId ? String(location.state.nasabahId) : ""
+  );
+  const [transactionDate, setTransactionDate] = useState(() =>
+    dayjs().format("YYYY-MM-DDTHH:mm")
   );
 
   // SETOR Multi-Items State
@@ -216,6 +223,15 @@ export const TransactionCreatePage = () => {
       setErrorMessage("Silakan pilih nasabah terlebih dahulu.");
       return;
     }
+    if (!transactionDate) {
+      setErrorMessage("Silakan tentukan tanggal dan waktu transaksi.");
+      return;
+    }
+    const parsedDate = new Date(transactionDate);
+    if (isNaN(parsedDate.getTime())) {
+      setErrorMessage("Format tanggal dan waktu transaksi tidak valid.");
+      return;
+    }
     if (setorItems.length === 0) {
       setErrorMessage("Minimal harus ada 1 jenis sampah yang disetor.");
       return;
@@ -236,6 +252,7 @@ export const TransactionCreatePage = () => {
 
     createTxMutation.mutate({
       nasabah_id: String(selectedNasabahId),
+      transaction_date: parsedDate.toISOString(),
       type: "SETOR",
       items: setorItems.map((it) => ({
         price_id: String(it.price_id),
@@ -253,6 +270,15 @@ export const TransactionCreatePage = () => {
       setErrorMessage("Silakan pilih nasabah terlebih dahulu.");
       return;
     }
+    if (!transactionDate) {
+      setErrorMessage("Silakan tentukan tanggal dan waktu transaksi.");
+      return;
+    }
+    const parsedDate = new Date(transactionDate);
+    if (isNaN(parsedDate.getTime())) {
+      setErrorMessage("Format tanggal dan waktu transaksi tidak valid.");
+      return;
+    }
     if (numericWithdraw <= 0) {
       setErrorMessage("Jumlah penarikan harus lebih besar dari Rp 0.");
       return;
@@ -264,6 +290,7 @@ export const TransactionCreatePage = () => {
 
     createTxMutation.mutate({
       nasabah_id: String(selectedNasabahId),
+      transaction_date: parsedDate.toISOString(),
       type: "TARIK",
       amount: numericWithdraw,
       notes: tarikNotes || null,
@@ -290,13 +317,13 @@ export const TransactionCreatePage = () => {
         </Alert>
       )}
 
-      {/* Select Nasabah Card */}
+      {/* Select Nasabah & Transaction Date Card */}
       <Card
-        title="1. Pilih Nasabah"
-        subtitle="Cari dan tentukan akun nasabah aktif yang melakukan transaksi"
+        title="1. Pilih Nasabah & Waktu Transaksi"
+        subtitle="Cari akun nasabah aktif serta tentukan tanggal dan waktu transaksi"
       >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-2 space-y-3.5">
             <AutocompleteSelect
               label="Pilih Nasabah Aktif"
               placeholder={
@@ -320,6 +347,31 @@ export const TransactionCreatePage = () => {
               }
               options={nasabahOptions}
             />
+
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700">
+                  Tanggal & Jam Transaksi <span className="text-red-500 ml-0.5">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setTransactionDate(dayjs().format("YYYY-MM-DDTHH:mm"))}
+                  className="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-800 font-semibold transition-colors cursor-pointer"
+                  title="Klik untuk menggunakan tanggal dan jam sekarang"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Set ke Waktu Sekarang</span>
+                </button>
+              </div>
+              <Input
+                type="datetime-local"
+                value={transactionDate}
+                onChange={(e) => setTransactionDate(e.target.value)}
+                icon={Calendar}
+                required
+                helperText={`Terjadwal: ${transactionDate ? dayjs(transactionDate).format("dddd, DD MMMM YYYY • HH:mm") + " WITA" : "Belum ditentukan"}. Waktu default otomatis mengikuti saat ini, ubah bila transaksi susulan.`}
+              />
+            </div>
           </div>
 
           {selectedNasabah ? (
@@ -503,11 +555,19 @@ export const TransactionCreatePage = () => {
                   <Calculator className="w-4 h-4" />
                   <span>Kalkulasi Otomatis Setoran</span>
                 </div>
-                {setorItems.length > 1 && (
-                  <span className="bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded text-[11px] font-bold">
-                    {setorItems.length} Kelompok Berbeda
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {transactionDate && (
+                    <span className="inline-flex items-center gap-1 bg-white/80 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                      <Calendar className="w-3 h-3 text-emerald-600" />
+                      {dayjs(transactionDate).format("DD/MM/YYYY HH:mm")}
+                    </span>
+                  )}
+                  {setorItems.length > 1 && (
+                    <span className="bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded text-[11px] font-bold">
+                      {setorItems.length} Kelompok Berbeda
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Mini breakdown table if multiple items */}
@@ -631,9 +691,17 @@ export const TransactionCreatePage = () => {
 
             {/* Calculation Preview Box */}
             <div className="p-4 rounded-xl bg-gradient-to-br from-rose-50 to-orange-50 border border-rose-200">
-              <div className="flex items-center gap-2 font-bold text-xs text-rose-900 mb-2">
-                <Calculator className="w-4 h-4" />
-                <span>Kalkulasi Saldo Penarikan</span>
+              <div className="flex items-center justify-between font-bold text-xs text-rose-900 mb-2">
+                <div className="flex items-center gap-2">
+                  <Calculator className="w-4 h-4" />
+                  <span>Kalkulasi Saldo Penarikan</span>
+                </div>
+                {transactionDate && (
+                  <span className="inline-flex items-center gap-1 bg-white/80 text-rose-800 border border-rose-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                    <Calendar className="w-3 h-3 text-rose-600" />
+                    {dayjs(transactionDate).format("DD/MM/YYYY HH:mm")}
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
