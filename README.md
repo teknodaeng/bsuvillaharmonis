@@ -43,6 +43,11 @@ Aplikasi web modern dan terpadu untuk pengelolaan operasional **Bank Sampah Unit
 - Akun login nasabah otomatis aktif dan langsung dapat digunakan.
 
 ### 3. 💰 Catat Transaksi Tabungan Cerdas & Multi-Item
+- **Pilihan Waktu & Tanggal Transaksi Fleksibel (Backdating Support):**
+  - Input tanggal dan waktu transaksi (`datetime-local`) terintegrasi untuk transaksi Setor Sampah maupun Tarik Tunai.
+  - Nilai awal otomatis terisi waktu saat ini (*default now*), dilengkapi tombol aksi cepat *"Set ke Waktu Sekarang"*.
+  - Mendukung pencatatan transaksi susulan / tanggal lampau (*backdate*) dengan penomoran transaksi (`TRX-YYYYMMDD-XXXX`) dan urutan kronologis buku tabungan yang sinkron otomatis.
+  - Tanggal dan jam yang dipilih dicatat secara final dan presisi ke database (`transaction_date`, `created_at` transaksi, serta `created_at` rincian item) tanpa pergeseran zona waktu.
 - **Setor Sampah (Multi-Item Waste Deposit):**
   - Pemilihan nasabah aktif dengan **autocomplete search suggestions**.
   - **Dukungan Banyak Jenis Sampah Sekaligus**: Petugas dapat menambahkan lebih dari 1 kelompok sampah berbeda dalam satu transaksi setor (dinamis tambah/hapus baris item).
@@ -53,6 +58,8 @@ Aplikasi web modern dan terpadu untuk pengelolaan operasional **Bank Sampah Unit
   - Pemotongan saldo dan pencatatan riwayat debit secara atomik.
 - **Penerbitan Bukti Transaksi Resmi (Struk Kasir & PDF):**
   - Halaman bukti transaksi dengan tata letak struk kasir modern menampilkan rincian tabel multi-item barang dan identitas petugas kasir (`Kasir / Petugas`).
+  - Tata letak footer ucapan terima kasih dan keterangan cetak diposisikan rapi di tengah (*center-aligned*) pada struk PDF A5 maupun struk web.
+  - Jam cetak bukti transaksi otomatis disinkronkan sesuai dengan jam waktu pelaksanaan transaksi.
   - Siap cetak langsung (*browser print*) dengan optimalisasi printer thermal maupun format A5 (@media print responsif).
   - Ekspor dan unduh berkas digital format **PDF A5** dengan text-wrapping rapi.
 

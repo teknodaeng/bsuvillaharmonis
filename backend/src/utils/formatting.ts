@@ -15,6 +15,13 @@ export function formatKg(
 
 export function formatDate(dt: string | Date | null | undefined): string {
   if (!dt) return '-';
+  if (typeof dt === 'string') {
+    const m = dt.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      const [, Y, M, D] = m;
+      return `${D}/${M}/${Y}`;
+    }
+  }
   const d = typeof dt === 'string' ? new Date(dt) : dt;
   if (isNaN(d.getTime())) return typeof dt === 'string' ? dt : '-';
   const day = String(d.getDate()).padStart(2, '0');
@@ -25,6 +32,13 @@ export function formatDate(dt: string | Date | null | undefined): string {
 
 export function formatDateTime(dt: string | Date | null | undefined): string {
   if (!dt) return '-';
+  if (typeof dt === 'string') {
+    const m = dt.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (m) {
+      const [, Y, M, D, h, min] = m;
+      return `${D}/${M}/${Y} ${h}:${min}`;
+    }
+  }
   const d = typeof dt === 'string' ? new Date(dt) : dt;
   if (isNaN(d.getTime())) return typeof dt === 'string' ? dt : '-';
   const day = String(d.getDate()).padStart(2, '0');

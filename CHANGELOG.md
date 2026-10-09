@@ -10,7 +10,8 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## 📌 Rekapitulasi Versi Rilis
 
-- [v2.1.0 (Current)](#v210---2026-09-14-multi-item-deposit-receipt-printing-nasabah-list-hardening--vitest-expansion) — Setor Sampah Multi-Item, Desain Struk Kasir & PDF, Perbaikan Daftar Nasabah, Penguatan Keamanan, & Ekspansi Test Suite Vitest
+- [v2.2.0 (Current)](#v220---2026-10-09-custom-transaction-date-time-picker-backdating-support--receipt-layout-centering) — Pilihan Tanggal & Waktu Transaksi Fleksibel, Dukungan Transaksi Susulan (Backdate), Penyelarasan Jam Cetak Bukti Transaksi, & Tata Letak Footer Struk di Tengah
+- [v2.1.0](#v210---2026-09-14-multi-item-deposit-receipt-printing-nasabah-list-hardening--vitest-expansion) — Setor Sampah Multi-Item, Desain Struk Kasir & PDF, Perbaikan Daftar Nasabah, Penguatan Keamanan, & Ekspansi Test Suite Vitest
 - [v2.0.0 (Hono Architecture)](#v200---2026-09-08-hono-web-framework-architecture--frontend-alignment) — Modernisasi Arsitektur Backend ke Hono Web Application Framework (TypeScript)
 - [v1.1.0](#v110---2026-09-08-production-ready) — Pembaruan PRD Final, Penyelarasan Dokumen Spesifikasi Sistem & Validasi UAT 100%
 - [v1.0.3](#v103---2026-09-06) — Perbaikan Autentikasi Login, Multi-Identifier, & Penanganan Sesi Pengguna
@@ -19,6 +20,30 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 - [v1.0.0 (Initial Stable Release)](#v100---2026-09-02) — Peluncuran Sistem Tabungan BSU Villa Harmonis (Fitur Inti & Modul Lengkap)
 - [v0.9.0 (Beta / Second Commit)](#v090---2026-08-28) — Integrasi Master Data Dinamis, Transaksi Cerdas Autocomplete, & Manajemen Petugas
 - [v0.1.0 (Alpha / First Commit)](#v010---2026-08-20) — Inisialisasi Repositori, Arsitektur Monorepo, & Skema Basis Data Awal
+
+---
+
+## [v2.2.0] - 2026-10-09 (Custom Transaction Date-Time Picker, Backdating Support, & Receipt Layout Centering)
+
+### ⏱️ Fitur Baru: Pilihan Tanggal & Waktu Transaksi (Catat Transaksi Baru)
+- **Komponen Input Tanggal & Jam Dinamis ([TransactionCreatePage.jsx](frontend/src/features/transactions/TransactionCreatePage.jsx))**:
+  - Penambahan input formulir `datetime-local` yang terintegrasi pada kartu *Informasi Nasabah & Waktu Transaksi* untuk transaksi **SETOR** maupun **TARIK**.
+  - Nilai awal otomatis terisi waktu saat ini (*current timestamp*).
+  - Tombol aksi cepat **"Set ke Waktu Sekarang"** untuk mengembalikan waktu ke menit/detik saat ini dengan satu klik.
+  - Teks bantu preview waktu terformat lokal bahasa Indonesia secara seketika (*real-time*), misalnya: `Jumat, 09 Oktober 2026 • 18:25 WITA`.
+  - Penanda waktu transaksi pada kotak *Kalkulasi Otomatis Setoran* dan *Kalkulasi Saldo Penarikan*.
+  - Validasi frontend yang memastikan format tanggal dan waktu valid sebelum payload dikirimkan ke server.
+- **Pencatatan Presisi ke Basis Data & Dukungan Transaksi Susulan ([transactionService.ts](backend/src/services/transactionService.ts))**:
+  - Tanggal dan jam yang dipilih pada formulir dicatat secara presisi dan verbatim ke dalam basis data (`transactions.transaction_date`, `transactions.created_at`, serta `transaction_items.created_at`) menggunakan format standar `YYYY-MM-DD HH:mm:ss`, mencegah pergeseran jam akibat konversi UTC.
+  - Penyelarasan generator nomor transaksi (`generateTransactionNo`) yang membaca tanggal transaksi terpilih, sehingga transaksi tanggal lampau/susulan menghasilkan nomor `TRX-YYYYMMDD-XXXX` yang konsisten dengan tanggal pelaksanaannya.
+  - Penyelarasan fungsi pemformatan tanggal ([formatting.ts](backend/src/utils/formatting.ts) & [formatting.js](frontend/src/utils/formatting.js)) untuk parsing deterministik format lokal tanpa distorsi zona waktu.
+  - Data transaksi tersimpan dan terurut secara kronologis pada buku tabungan nasabah, riwayat mutasi, serta laporan operasional.
+
+### 🧾 Penyempurnaan Tata Letak & Jam Cetak Bukti Transaksi (Struk & PDF)
+- **Tata Letak Paragraf Footer Rapi di Tengah (*Center-Aligned*)**:
+  - Perbaikan koordinat rendering PDFKit pada [receiptService.ts](backend/src/services/receiptService.ts): mereset koordinat horizontal (`doc.x = 28` dengan lebar `doc.page.width - 56`) setelah tanda tangan petugas, sehingga paragraf ucapan terima kasih dan keterangan cetak terpusat presisi di tengah halaman struk A5.
+- **Sinkronisasi Jam Cetak Struk dengan Jam Transaksi**:
+  - Memperbaiki parameter `printed_at` / label *"Dicetak pada:"* pada generator PDF [receiptService.ts](backend/src/services/receiptService.ts) dan halaman web [ReceiptPage.jsx](frontend/src/features/receipts/ReceiptPage.jsx) agar menampilkan waktu transaksi (`formatDateTime(tx.transaction_date)`), bukan waktu saat tombol cetak ditekan.
 
 ---
 

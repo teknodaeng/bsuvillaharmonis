@@ -8,18 +8,20 @@ import { formatRupiah } from '../utils/currency.js';
 
 export class TransactionService {
   public static async generateTransactionNo(tx: any, txDateStr?: string): Promise<string> {
-    let parsed: Date;
-    try {
-      parsed = txDateStr ? new Date(txDateStr) : new Date();
-      if (isNaN(parsed.getTime())) parsed = new Date();
-    } catch {
-      parsed = new Date();
+    let datePrefix = '';
+    if (txDateStr && /^\d{4}-\d{2}-\d{2}/.test(txDateStr)) {
+      datePrefix = txDateStr.slice(0, 10).replace(/-/g, '');
+    } else {
+      let parsed = new Date();
+      if (txDateStr) {
+        const d = new Date(txDateStr);
+        if (!isNaN(d.getTime())) parsed = d;
+      }
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const day = String(parsed.getDate()).padStart(2, '0');
+      datePrefix = `${year}${month}${day}`;
     }
-
-    const year = parsed.getFullYear();
-    const month = String(parsed.getMonth() + 1).padStart(2, '0');
-    const day = String(parsed.getDate()).padStart(2, '0');
-    const datePrefix = `${year}${month}${day}`;
     const searchPattern = `TRX-${datePrefix}-%`;
 
     const row = await tx.fetchOne(
@@ -137,7 +139,38 @@ export class TransactionService {
       throw new AppError('Transaksi ditolak. Status nasabah nonaktif.', 400, 'NASABAH_INACTIVE');
     }
 
-    const txDate = data.transaction_date || new Date().toISOString();
+    let txDate: string;
+    if (data.transaction_date && typeof data.transaction_date === 'string' && data.transaction_date.trim()) {
+      const trimmed = data.transaction_date.trim();
+      const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}))?/);
+      if (match) {
+        const datePart = match[1];
+        const timePart = match[2];
+        const secPart = match[3] || '00';
+        txDate = `${datePart} ${timePart}:${secPart}`;
+      } else {
+        const parsed = new Date(trimmed);
+        if (isNaN(parsed.getTime())) {
+          throw new AppError('Format tanggal/waktu transaksi tidak valid.', 400, 'INVALID_DATE');
+        }
+        const Y = parsed.getFullYear();
+        const M = String(parsed.getMonth() + 1).padStart(2, '0');
+        const D = String(parsed.getDate()).padStart(2, '0');
+        const h = String(parsed.getHours()).padStart(2, '0');
+        const m = String(parsed.getMinutes()).padStart(2, '0');
+        const s = String(parsed.getSeconds()).padStart(2, '0');
+        txDate = `${Y}-${M}-${D} ${h}:${m}:${s}`;
+      }
+    } else {
+      const now = new Date();
+      const Y = now.getFullYear();
+      const M = String(now.getMonth() + 1).padStart(2, '0');
+      const D = String(now.getDate()).padStart(2, '0');
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      txDate = `${Y}-${M}-${D} ${h}:${m}:${s}`;
+    }
 
     const txId = uuidv4();
     let categoryId: string | null = null;
@@ -293,8 +326,8 @@ export class TransactionService {
         sql: `INSERT INTO transactions (
           id, transaction_no, nasabah_id, transaction_date, type, category_id, price_id,
           weight_gram, price_per_kg, amount, debit, credit, balance_after,
-          notes, idempotency_key, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          notes, idempotency_key, created_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           txNo,
@@ -312,6 +345,7 @@ export class TransactionService {
           data.notes || null,
           data.idempotency_key || null,
           creatorId || 'ADMIN',
+          txDate,
         ],
       });
 
@@ -321,8 +355,8 @@ export class TransactionService {
           await tx.execute({
             sql: `INSERT INTO transaction_items (
               id, transaction_id, category_id, price_id, weight_gram, price_per_kg, amount, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-            args: [itemId, txId, it.categoryId, it.priceId, it.weightGram, it.pricePerKg, it.amount],
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [itemId, txId, it.categoryId, it.priceId, it.weightGram, it.pricePerKg, it.amount, txDate],
           });
         }
       }

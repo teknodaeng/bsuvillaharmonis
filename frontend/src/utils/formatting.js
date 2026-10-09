@@ -5,11 +5,25 @@ dayjs.locale("id");
 
 export const formatDate = (dateStr) => {
   if (!dateStr) return "-";
+  if (typeof dateStr === "string") {
+    const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      const [, Y, M, D] = m;
+      return `${D}/${M}/${Y}`;
+    }
+  }
   return dayjs(dateStr).format("DD/MM/YYYY");
 };
 
 export const formatDateTime = (dateStr) => {
   if (!dateStr) return "-";
+  if (typeof dateStr === "string") {
+    const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (m) {
+      const [, Y, M, D, h, min] = m;
+      return `${D}/${M}/${Y} ${h}:${min}`;
+    }
+  }
   return dayjs(dateStr).format("DD/MM/YYYY HH:mm");
 };
 
