@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   GitCommit,
   Info,
+  HandCoins,
 } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
@@ -38,8 +39,9 @@ export const ChangelogPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("ALL");
   const [expandedVersions, setExpandedVersions] = useState({
+    "v2.3.0": true,
     "v2.2.0": true,
-    "v2.1.0": true,
+    "v2.1.0": false,
   });
 
   const toggleExpand = (ver) => {
@@ -65,6 +67,8 @@ export const ChangelogPage = () => {
   const renderSectionIcon = (iconName) => {
     const props = { className: "w-4 h-4 shrink-0" };
     switch (iconName) {
+      case "HandCoins":
+        return <HandCoins {...props} />;
       case "Clock":
         return <Clock {...props} />;
       case "Receipt":

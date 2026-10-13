@@ -30,6 +30,8 @@ import { ReceiptPage } from "../features/receipts/ReceiptPage";
 import { ReportListPage } from "../features/reports/ReportListPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
 import { ChangelogPage } from "../features/changelog/ChangelogPage";
+import { NasabahWithdrawalPage } from "../features/withdrawal/NasabahWithdrawalPage";
+import { AdminWithdrawalListPage } from "../features/withdrawal/AdminWithdrawalListPage";
 
 const RootRedirect = () => {
   const { isAuthenticated, role } = useAuthStore();
@@ -61,6 +63,7 @@ export const AppRoutes = () => {
       >
         <Route path="/dashboard" element={<NasabahDashboardPage />} />
         <Route path="/riwayat" element={<NasabahTransactionHistoryPage />} />
+        <Route path="/permohonan-tarik" element={<NasabahWithdrawalPage />} />
         <Route path="/harga-sampah" element={<NasabahPriceListPage />} />
         <Route path="/profil" element={<ProfilePage />} />
         <Route path="/changelog" element={<ChangelogPage />} />
@@ -83,6 +86,7 @@ export const AppRoutes = () => {
         <Route path="/admin/transaksi" element={<TransactionListPage />} />
         <Route path="/admin/transaksi/new" element={<TransactionCreatePage />} />
         <Route path="/admin/transaksi/:transactionId" element={<TransactionDetailPage />} />
+        <Route path="/admin/permohonan-tarik" element={<AdminWithdrawalListPage />} />
         <Route path="/admin/master/users" element={<UserManagementPage />} />
         <Route path="/admin/master/kategori" element={<CategoryListPage />} />
         <Route path="/admin/master/harga-sampah" element={<PriceListPage />} />

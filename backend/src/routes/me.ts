@@ -10,6 +10,9 @@ import { reportService } from '../services/reportService.js';
 import { successResponse } from '../utils/response.js';
 import { validateJson } from '../utils/validator.js';
 import { nasabahSelfUpdateSchema } from '../schemas/nasabah.schema.js';
+import { WithdrawalService } from '../services/withdrawalService.js';
+import { withdrawalRequestCreateSchema } from '../schemas/withdrawal.schema.js';
+import { AppError } from '../utils/response.js';
 
 export const meRouter = new Hono<AppEnv>();
 
@@ -123,5 +126,69 @@ meRouter.get('/transactions/statement.pdf', async (c) => {
     'inline; filename="riwayat-transaksi-saya.pdf"'
   );
   return c.body(new Uint8Array(buffer));
+});
+
+// GET /api/v1/me/withdrawal-requests/summary
+meRouter.get('/withdrawal-requests/summary', async (c) => {
+  const user = c.get('user');
+  const nasabahId = user.nasabah_id || user.id;
+  const summary = await WithdrawalService.getSummaryStats(nasabahId);
+  return successResponse(c, summary, 'Ringkasan permohonan penarikan berhasil dimuat.');
+});
+
+// POST /api/v1/me/withdrawal-requests
+meRouter.post('/withdrawal-requests', validateJson(withdrawalRequestCreateSchema), async (c) => {
+  const user = c.get('user');
+  const data = c.req.valid('json' as any);
+  const nasabahId = user.nasabah_id || user.id;
+  const result = await WithdrawalService.createRequest(nasabahId, data);
+  return successResponse(
+    c,
+    result,
+    `Permohonan penarikan saldo sebesar ${result.amount_formatted} berhasil diajukan. Menunggu persetujuan Admin Bank Sampah.`,
+    201
+  );
+});
+
+// GET /api/v1/me/withdrawal-requests
+meRouter.get('/withdrawal-requests', async (c) => {
+  const user = c.get('user');
+  const query = c.req.query();
+  const nasabahId = user.nasabah_id || user.id;
+  const result = await WithdrawalService.listRequests({
+    nasabah_id: nasabahId,
+    status: query.status,
+    start_date: query.start_date,
+    end_date: query.end_date,
+    search: query.search,
+    page: query.page ? parseInt(query.page, 10) : 1,
+    page_size: query.page_size ? parseInt(query.page_size, 10) : 20,
+  });
+  return successResponse(c, result, 'Daftar permohonan penarikan berhasil dimuat.');
+});
+
+// GET /api/v1/me/withdrawal-requests/:id
+meRouter.get('/withdrawal-requests/:id', async (c) => {
+  const user = c.get('user');
+  const id = c.req.param('id');
+  const nasabahId = user.nasabah_id || user.id;
+  const result = await WithdrawalService.getRequestById(id);
+  if (result.nasabah_id !== nasabahId) {
+    throw new AppError('Anda tidak memiliki akses ke permohonan penarikan ini.', 403, 'FORBIDDEN');
+  }
+  return successResponse(c, result, 'Detail permohonan penarikan berhasil dimuat.');
+});
+
+// POST /api/v1/me/withdrawal-requests/:id/cancel
+meRouter.post('/withdrawal-requests/:id/cancel', async (c) => {
+  const user = c.get('user');
+  const id = c.req.param('id');
+  const nasabahId = user.nasabah_id || user.id;
+  const result = await WithdrawalService.cancelRequest(id, nasabahId);
+  return successResponse(
+    c,
+    result,
+    `Permohonan penarikan ${result.request_no} berhasil dibatalkan.`
+  );
 });
 
