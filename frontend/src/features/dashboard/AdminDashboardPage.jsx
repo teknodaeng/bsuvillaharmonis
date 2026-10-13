@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Scale,
   Layers,
+  HandCoins,
+  Clock,
 } from "lucide-react";
 import { dashboardService } from "../../services/dashboardService";
 import { Card } from "../../components/ui/Card";
@@ -124,6 +126,25 @@ export const AdminDashboardPage = () => {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          <Link to="/admin/permohonan-tarik">
+            <Button
+              variant="outline"
+              size="md"
+              icon={HandCoins}
+              className={
+                data?.pending_withdrawals_count > 0
+                  ? "border-amber-400 bg-amber-50 text-amber-900 font-semibold shadow-xs"
+                  : ""
+              }
+            >
+              Permohonan Penarikan
+              {data?.pending_withdrawals_count > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white leading-none">
+                  {data.pending_withdrawals_count}
+                </span>
+              )}
+            </Button>
+          </Link>
           <Link to="/admin/transaksi/new">
             <Button variant="primary" size="md" icon={PlusCircle}>
               Catat Transaksi
@@ -141,6 +162,44 @@ export const AdminDashboardPage = () => {
           </Link>
         </div>
       </div>
+
+      {/* Pending Withdrawal Attention Banner */}
+      {data?.pending_withdrawals_count > 0 && (
+        <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-amber-950">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Clock className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-sm sm:text-base text-amber-950">
+                  {data.pending_withdrawals_count} Permohonan Penarikan Saldo Menunggu Persetujuan!
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900 uppercase tracking-wide">
+                  Perlu Tindakan
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-1">
+                Total nominal yang diajukan nasabah:{" "}
+                <strong className="text-amber-950 font-bold">
+                  {data.pending_withdrawals_amount_formatted}
+                </strong>
+                . Silakan tinjau untuk menyetujui pencairan atau memberikan alasan penolakan.
+              </p>
+            </div>
+          </div>
+          <Link to="/admin/permohonan-tarik" className="shrink-0">
+            <Button
+              variant="primary"
+              size="md"
+              className="bg-amber-600 hover:bg-amber-700 text-white shadow-xs font-bold"
+              icon={HandCoins}
+            >
+              Tinjau Permohonan Sekarang &rarr;
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Metrics Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">

@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, History, DollarSign, User, LogOut } from "lucide-react";
+import { LayoutDashboard, History, DollarSign, User, LogOut, HandCoins } from "lucide-react";
 import clsx from "clsx";
 import { APP_NAME, APP_VERSION } from "../../constants/app";
 import { useAuthStore } from "../../stores/authStore";
@@ -17,6 +17,7 @@ export const NasabahLayout = () => {
 
   const navLinks = [
     { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+    { label: "Tarik Saldo", to: "/permohonan-tarik", icon: HandCoins },
     { label: "Riwayat Transaksi", to: "/riwayat", icon: History },
     { label: "Harga Sampah", to: "/harga-sampah", icon: DollarSign },
     { label: "Profil Saya", to: "/profil", icon: User },

@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Scale,
   Layers,
+  HandCoins,
+  Clock,
 } from "lucide-react";
 import { dashboardService } from "../../services/dashboardService";
 import { Card } from "../../components/ui/Card";
@@ -112,7 +114,17 @@ export const NasabahDashboardPage = () => {
               Selamat datang di portal tabungan Bank Sampah Villa Harmonis.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/permohonan-tarik">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white text-emerald-800 hover:bg-emerald-50 border-white font-bold shadow-xs"
+                icon={HandCoins}
+              >
+                Tarik Saldo
+              </Button>
+            </Link>
             <Link to="/riwayat">
               <Button
                 variant="outline"
@@ -136,6 +148,31 @@ export const NasabahDashboardPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Pending Withdrawal Alert Banner */}
+      {data?.pending_withdrawals_count > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs sm:text-sm text-amber-900">
+                Permohonan Penarikan Saldo Sedang Diproses
+              </h4>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Anda memiliki <strong>{data.pending_withdrawals_count} permohonan</strong> penarikan saldo sebesar{" "}
+                <strong>{data.pending_withdrawals_amount_formatted}</strong> yang sedang menunggu persetujuan Admin Bank Sampah.
+              </p>
+            </div>
+          </div>
+          <Link to="/permohonan-tarik" className="shrink-0">
+            <Button variant="outline" size="xs" className="bg-white text-amber-800 border-amber-300 hover:bg-amber-100/50" icon={ChevronRight}>
+              Lihat Status Permohonan
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

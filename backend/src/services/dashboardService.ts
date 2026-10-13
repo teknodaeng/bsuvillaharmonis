@@ -41,6 +41,13 @@ export class DashboardService {
     );
     const totalTransactionsToday = trxTodayRow ? Number(trxTodayRow.cnt) : 0;
 
+    // 3b. Pending withdrawal requests
+    const pendingWdRow = await db.fetchOne<any>(
+      "SELECT COUNT(*) as cnt, COALESCE(SUM(amount), 0) as total FROM withdrawal_requests WHERE status = 'PENDING'"
+    );
+    const pendingWithdrawalCount = pendingWdRow ? Number(pendingWdRow.cnt) : 0;
+    const pendingWithdrawalAmount = pendingWdRow ? Number(pendingWdRow.total) : 0;
+
     // 4. Recent transactions (latest 5)
     const { items: recentTxs } = await transactionService.listTransactions({
       page: 1,
@@ -108,6 +115,9 @@ export class DashboardService {
       total_tarik_this_month: totalTarikThisMonth,
       total_tarik_this_month_formatted: formatRupiah(totalTarikThisMonth),
       total_transactions_today: totalTransactionsToday,
+      pending_withdrawals_count: pendingWithdrawalCount,
+      pending_withdrawals_amount: pendingWithdrawalAmount,
+      pending_withdrawals_amount_formatted: formatRupiah(pendingWithdrawalAmount),
       total_weight_gram: totalWeightGram,
       total_weight_kg: totalWeightKg,
       total_weight_kg_formatted: `${totalWeightKg.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`,
@@ -119,6 +129,14 @@ export class DashboardService {
   public static async getNasabahDashboard(nasabahId: string) {
     const nasabah = await nasabahService.getNasabahById(nasabahId);
     const balance = await nasabahService.getNasabahBalance(nasabahId);
+
+    const pendingWdRow = await db.fetchOne<any>(
+      "SELECT COUNT(*) as cnt, COALESCE(SUM(amount), 0) as total FROM withdrawal_requests WHERE nasabah_id = ? AND status = 'PENDING'",
+      [nasabahId]
+    );
+    const pendingWithdrawalCount = pendingWdRow ? Number(pendingWdRow.cnt) : 0;
+    const pendingWithdrawalAmount = pendingWdRow ? Number(pendingWdRow.total) : 0;
+    const availableBalance = balance - pendingWithdrawalAmount;
 
     const setorRow = await db.fetchOne<any>(
       "SELECT COALESCE(SUM(credit), 0) as s FROM transactions WHERE nasabah_id = ? AND type = 'SETOR'",
@@ -200,6 +218,11 @@ export class DashboardService {
       name: nasabah.name,
       balance,
       balance_formatted: formatRupiah(balance),
+      available_balance: availableBalance,
+      available_balance_formatted: formatRupiah(availableBalance),
+      pending_withdrawals_count: pendingWithdrawalCount,
+      pending_withdrawals_amount: pendingWithdrawalAmount,
+      pending_withdrawals_amount_formatted: formatRupiah(pendingWithdrawalAmount),
       total_setor: totalSetor,
       total_setor_formatted: formatRupiah(totalSetor),
       total_tarik: totalTarik,

@@ -10,7 +10,8 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 
 ## Rekapitulasi Versi Rilis Uji Coba
 
-- [v2.2.0 (Current)](#v220---2026-10-09-custom-transaction-date-time-picker-changelog-page--app-version-receipt-centering--category-filter) — Pilihan Tanggal & Waktu Transaksi Fleksibel, Halaman Catatan Perubahan (Changelog) & Penampil Versi Aplikasi, Penyelarasan Struk Kasir & PDF, serta Sinkronisasi Distribusi Kategori
+- [v2.3.0 (Current)](#v230---2026-10-13-fitur-permohonan-penarikan-saldo-nasabah--persetujuanpenolakan-oleh-admin-bank-sampah) — Permohonan Penarikan Saldo oleh Nasabah (Tunai & Transfer), Validasi Saldo Tersedia, serta Modul Persetujuan & Penolakan oleh Admin Bank Sampah
+- [v2.2.0](#v220---2026-10-09-custom-transaction-date-time-picker-changelog-page--app-version-receipt-centering--category-filter) — Pilihan Tanggal & Waktu Transaksi Fleksibel, Halaman Catatan Perubahan (Changelog) & Penampil Versi Aplikasi, Penyelarasan Struk Kasir & PDF, serta Sinkronisasi Distribusi Kategori
 - [v2.1.0](#v210---2026-09-14-multi-item-deposit-receipt-printing-nasabah-list-hardening--vitest-expansion) — Setor Sampah Multi-Item, Desain Struk Kasir & PDF, Perbaikan Daftar Nasabah, Penguatan Keamanan, & Ekspansi Test Suite Vitest
 - [v2.0.0 (Hono Architecture)](#v200---2026-09-08-hono-web-framework-architecture--frontend-alignment) — Modernisasi Arsitektur Backend ke Hono Web Application Framework (TypeScript)
 - [v1.1.0](#v110---2026-09-08-production-ready) — Pembaruan, Penyelarasan Dokumen Spesifikasi Sistem & Validasi UAT 100%
@@ -20,6 +21,57 @@ Format pencatatan mengacu pada panduan [Keep a Changelog](https://keepachangelog
 - [v1.0.0 (Initial Stable Release)](#v100---2026-09-02) — Peluncuran Sistem Tabungan BSU Villa Harmonis (Fitur Inti & Modul Lengkap)
 - [v0.9.0 (Beta / Second Commit)](#v090---2026-08-28) — Integrasi Master Data Dinamis, Transaksi Cerdas Autocomplete, & Manajemen Petugas
 - [v0.1.0 (Alpha / First Commit)](#v010---2026-08-20) — Inisialisasi Repositori, Arsitektur Monorepo, & Skema Basis Data Awal
+
+---
+
+## [v2.3.0] - 2026-10-13 (Fitur Permohonan Penarikan Saldo Nasabah & Persetujuan/Penolakan oleh Admin Bank Sampah)
+
+### Fitur Baru: Permohonan Penarikan Saldo oleh Nasabah (Portal Nasabah)
+
+- **Halaman Permohonan Penarikan Mandiri ([NasabahWithdrawalPage.jsx](frontend/src/features/withdrawal/NasabahWithdrawalPage.jsx))**:
+  - Halaman khusus `/permohonan-tarik` terintegrasi pada bilah navigasi atas Portal Nasabah (`NasabahLayout.jsx`) dengan ikon koin penarikan (`HandCoins`).
+  - Tiga kartu metrik ringkasan saldo: **Total Saldo Tabungan**, **Dalam Antrean (Pending)**, dan **Saldo Siap Ditarik (Available Balance)**.
+  - Formulir pengajuan penarikan interaktif dengan input angka rupiah terformat otomatis dan pilihan nominal cepat (`Rp 20.000`, `Rp 50.000`, `Rp 100.000`, `Rp 200.000`, dan `Tarik Semua Saldo`).
+  - Opsi pilihan metode pencairan dana:
+    - **Uang Tunai (Cash)**: Pengambilan langsung di pos/kantor BSU Villa Harmonis.
+    - **Transfer Bank / E-Wallet**: Pilihan bank populer (BCA, BRI, Mandiri, BNI, BSI, Bank Jatim, DANA, GoPay, OVO, ShopeePay, atau bank lainnya) dilengkapi nomor rekening dan nama pemilik rekening.
+  - Kolom catatan pengajuan opsional serta kalkulasi preview saldo sisa secara seketika (*real-time*).
+- **Kontrol Proteksi Saldo Tersedia (Available Balance Guard)**:
+  - Mencegah nasabah mengajukan penarikan melebihi saldo tabungan aktif atau melebihi saldo yang belum dikunci oleh permohonan pending lainnya (*double-spend protection*).
+- **Pembatalan Mandiri Permohonan Pending**:
+  - Nasabah dapat membatalkan permohonannya sendiri kapan saja selama statusnya masih `Menunggu Persetujuan (PENDING)` melalui modal konfirmasi aman.
+- **Riwayat & Status Transparansi Permohonan**:
+  - Tabel riwayat permohonan dilengkapi filter status (`Semua`, `Menunggu Persetujuan`, `Disetujui`, `Ditolak`, `Dibatalkan`), rincian alasan penolakan jika ditolak admin, serta tautan langsung ke cetak bukti transaksi jika disetujui.
+- **Banner Notifikasi Dashboard Nasabah ([NasabahDashboardPage.jsx](frontend/src/features/dashboard/NasabahDashboardPage.jsx))**:
+  - Tombol aksi cepat **"Tarik Saldo"** pada banner selamat datang dan kartu Saldo Tabungan.
+  - Banner peringatan dinamis jika nasabah memiliki permohonan yang sedang menunggu verifikasi admin.
+
+### Fitur Baru: Modul Persetujuan & Penolakan oleh Admin Bank Sampah (Panel Admin)
+
+- **Halaman Pengelolaan Permohonan Penarikan ([AdminWithdrawalListPage.jsx](frontend/src/features/withdrawal/AdminWithdrawalListPage.jsx))**:
+  - Halaman khusus `/admin/permohonan-tarik` untuk admin bank sampah mengelola antrean pencairan dana nasabah.
+  - Empat kartu statistik: **Menunggu Persetujuan (Pending)** beserta total nominal rupiahnya, **Total Disetujui (Approved)**, **Ditolak (Rejected)**, dan **Dibatalkan Nasabah (Cancelled)**.
+  - Filter pencarian multi-kriteria (nama nasabah, ID/rekening nasabah, no permohonan, nama bank, rentang tanggal, dan tab status).
+- **Persetujuan Atomik & Pencairan Saldo (Approval Flow)**:
+  - Modal persetujuan dengan pengecekan saldo aktual nasabah secara transaksional di basis data.
+  - Menyetujui permohonan otomatis memotong saldo nasabah dan mencatat transaksi kasir jenis `TARIK` resmi dengan nomor unik `TRX-YYYYMMDD-XXXX` dan referensi audit lengkap.
+- **Penolakan Permohonan dengan Alasan (Rejection Flow)**:
+  - Modal penolakan yang mewajibkan admin mengisi alasan penolakan (dilengkapi template alasan cepat), memastikan transparansi bagi nasabah tanpa memotong saldo.
+- **Indikator Badge Notifikasi Sidebar & Dashboard ([Sidebar.jsx](frontend/src/components/layout/Sidebar.jsx) & [AdminDashboardPage.jsx](frontend/src/features/dashboard/AdminDashboardPage.jsx))**:
+  - Menu sidebar **"Permohonan Penarikan"** dilengkapi badge angka real-time yang menunjukkan permohonan pending yang perlu ditindaklanjuti.
+  - Banner perhatian prioritas tinggi pada Dashboard Operasional Admin yang menginformasikan jumlah permohonan dan total dana yang diajukan nasabah.
+
+### Pembaruan Arsitektur Backend & Database (Hono Web Framework)
+
+- **Tabel Basis Data `withdrawal_requests` ([migrations.ts](backend/src/db/migrations.ts))**:
+  - Struktur tabel lengkap mencatat `id`, `request_no` (`WD-YYYYMMDD-XXXX`), `nasabah_id`, `amount`, `method`, `bank_name`, `account_number`, `account_holder`, `notes`, `status`, `rejection_reason`, `transaction_id`, `approved_by`, `approved_at`, `rejected_by`, `rejected_at`, `cancelled_at`, serta indeks pencarian berkinerja tinggi.
+- **Layanan Inti & Validasi Zod ([withdrawalService.ts](backend/src/services/withdrawalService.ts) & [withdrawal.schema.ts](backend/src/schemas/withdrawal.schema.ts))**:
+  - Validasi ketat nominal minimal Rp 1.000, kelengkapan rekening untuk metode transfer, dan proteksi saldo atomic.
+- **API Endpoints RESTful**:
+  - Portal Nasabah: `POST /api/v1/me/withdrawal-requests`, `GET /api/v1/me/withdrawal-requests`, `GET /api/v1/me/withdrawal-requests/summary`, `GET /api/v1/me/withdrawal-requests/:id`, `POST /api/v1/me/withdrawal-requests/:id/cancel`.
+  - Panel Admin: `GET /api/v1/admin/withdrawal-requests`, `GET /api/v1/admin/withdrawal-requests/summary`, `GET /api/v1/admin/withdrawal-requests/:id`, `POST /api/v1/admin/withdrawal-requests/:id/approve`, `POST /api/v1/admin/withdrawal-requests/:id/reject`.
+- **Ekspansi Test Suite Vitest ([withdrawals.test.ts](backend/src/tests/withdrawals.test.ts))**:
+  - 7 unit & integration tests baru yang memverifikasi seluruh skenario penarikan saldo, proteksi role guard, dan pembatalan dengan hasil 100% lulus.
 
 ---
 

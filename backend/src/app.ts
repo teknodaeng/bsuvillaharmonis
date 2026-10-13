@@ -22,6 +22,7 @@ import {
 import { transactionsRouter } from './routes/transactions.js';
 import { reportsRouter } from './routes/reports.js';
 import { dashboardRouter } from './routes/dashboard.js';
+import { adminWithdrawalsRouter } from './routes/adminWithdrawals.js';
 
 export const app = new Hono<AppEnv>();
 
@@ -96,6 +97,7 @@ v1.route('/admin/master/categories', adminCategoriesRouter);
 v1.route('/master/waste-prices', pricesRouter);
 v1.route('/admin/master/waste-prices', adminPricesRouter);
 v1.route('/admin/transactions', transactionsRouter);
+v1.route('/admin/withdrawal-requests', adminWithdrawalsRouter);
 v1.route('/admin/reports', reportsRouter);
 v1.route('/admin', dashboardRouter);
 

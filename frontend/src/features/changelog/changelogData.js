@@ -1,12 +1,64 @@
 export const CHANGELOG_DATA = [
   {
-    version: "v2.2.0",
-    date: "09 Oktober 2026",
+    version: "v2.3.0",
+    date: "13 Oktober 2026",
     isCurrent: true,
     tag: "Current",
-    title: "Pilihan Waktu Transaksi, Halaman Catatan Perubahan & Versi, Penyelarasan Struk, serta Sinkronisasi Distribusi Kategori",
+    title: "Permohonan Penarikan Saldo Nasabah & Persetujuan/Penolakan oleh Admin Bank Sampah",
     badge: "Versi Terkini",
     badgeColor: "emerald",
+    summary:
+      "Fitur lengkap bagi nasabah untuk mengajukan permohonan penarikan saldo tabungan (secara tunai maupun transfer bank/e-wallet), kontrol saldo tersedia cerdas yang mencegah penarikan melebihi saldo aktif/antrean pending, fitur pembatalan mandiri oleh nasabah, serta modul persetujuan (approval dengan pencairan otomatis dan pencatatan transaksi kas TARIK) atau penolakan (rejection dengan catatan alasan) oleh Admin Bank Sampah dilengkapi notifikasi badge real-time di sidebar dan dashboard.",
+    sections: [
+      {
+        title: "Permohonan Penarikan Saldo oleh Nasabah (Portal Nasabah)",
+        type: "feature",
+        icon: "HandCoins",
+        items: [
+          "Halaman khusus Permohonan Penarikan (/permohonan-tarik) dengan kartu ringkasan Saldo Tabungan Total, Saldo Dalam Antrean (Pending), dan Saldo Siap Ditarik.",
+          "Formulir pengajuan interaktif dengan tombol nominal cepat (Rp 20.000, Rp 50.000, Rp 100.000, Rp 200.000, dan Tarik Semua Saldo).",
+          "Pilihan metode pencairan: Uang Tunai (Cash di Pos/Kantor BSU) atau Transfer Bank / E-Wallet (BCA, BRI, Mandiri, BNI, BSI, Bank Jatim, DANA, GoPay, OVO, ShopeePay, dll).",
+          "Validasi saldo tersedia (Available Balance Guard) yang memastikan jumlah pengajuan tidak melebihi sisa saldo yang belum dikunci oleh permohonan pending lainnya.",
+          "Fitur pembatalan mandiri (Cancel Request) untuk permohonan yang masih berstatus Menunggu Persetujuan (PENDING).",
+          "Tabel riwayat permohonan penarikan nasabah dengan filter status, rincian detail, status badge, alasan penolakan, serta tautan langsung ke bukti transaksi saat disetujui.",
+          "Banner notifikasi interaktif di Dashboard Nasabah jika terdapat permohonan penarikan yang sedang dalam proses verifikasi admin.",
+        ],
+      },
+      {
+        title: "Modul Persetujuan & Penolakan oleh Admin (Panel Admin)",
+        type: "feature",
+        icon: "ShieldCheck",
+        items: [
+          "Halaman manajemen Permohonan Penarikan (/admin/permohonan-tarik) dengan kartu statistik permohonan Menunggu Persetujuan, Total Disetujui, Ditolak, dan Dibatalkan.",
+          "Menu sidebar 'Permohonan Penarikan' dilengkapi indikator badge real-time yang menampilkan jumlah permohonan pending yang perlu ditindaklanjuti.",
+          "Banner peringatan prioritas tinggi pada Dashboard Admin jika terdapat nasabah yang mengajukan permohonan pencairan dana.",
+          "Modal Persetujuan (Approve): Verifikasi data nasabah, rekening tujuan, dan saldo secara atomik; otomatis memotong saldo nasabah dan mencatat transaksi kas TARIK resmi dengan nomor transaksi unik TRX-YYYYMMDD-XXXX.",
+          "Modal Penolakan (Reject): Admin dapat menolak permohonan dengan memasukkan alasan penolakan (dilengkapi template alasan cepat); saldo nasabah tetap aman dan tidak terpotong.",
+          "Filter pencarian multi-parameter (nama nasabah, nomor permohonan, nomor rekening tujuan, rentang tanggal, dan tab status permohonan).",
+          "Audit trail lengkap: mencatat tanggal pengajuan, tanggal persetujuan/penolakan, nama admin yang memproses, dan ID transaksi kasir.",
+        ],
+      },
+      {
+        title: "Arsitektur Basis Data & Keamanan Backend (Hono + SQLite LibSQL)",
+        type: "improvement",
+        icon: "Database",
+        items: [
+          "Migrasi skema database baru: tabel withdrawal_requests dengan relasi integritas referensial ke nasabah, users, dan transactions.",
+          "Database Transaction Atomicity: proses persetujuan admin berjalan dalam transaksi atomic terproteksi untuk mencegah race condition saldo ganda.",
+          "Role Guard & Ownership Guard: proteksi hak akses ketat di mana nasabah hanya dapat melihat/membatalkan permohonannya sendiri, dan endpoint approve/reject terproteksi hanya untuk role ADMIN.",
+          "Ekspansi unit & integration test Vitest komprehensif menguji skenario saldo tidak cukup, validasi transfer rekening, persetujuan admin, penolakan admin, pembatalan nasabah, dan proteksi role guard.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "v2.2.0",
+    date: "09 Oktober 2026",
+    isCurrent: false,
+    tag: "v2.2.0",
+    title: "Pilihan Waktu Transaksi, Halaman Catatan Perubahan & Versi, Penyelarasan Struk, serta Sinkronisasi Distribusi Kategori",
+    badge: "Versi 2.2.0",
+    badgeColor: "gray",
     summary:
       "Pilihan tanggal & jam transaksi fleksibel untuk mendukung transaksi susulan (backdate), rekaman database presisi, halaman interaktif catatan perubahan (changelog) dengan penampil versi aplikasi di sidebar admin dan footer nasabah, penataan struk di tengah, serta sinkronisasi agregasi multi-item dashboard & filter kategori aktif.",
     sections: [

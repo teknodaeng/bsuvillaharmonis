@@ -11,16 +11,27 @@ import {
   History,
   LogOut,
   X,
+  HandCoins,
 } from "lucide-react";
 import clsx from "clsx";
+import { useQuery } from "@tanstack/react-query";
 import { APP_NAME, APP_TAGLINE, APP_VERSION } from "../../constants/app";
 import { useAuthStore } from "../../stores/authStore";
 import { useUIStore } from "../../stores/uiStore";
+import { withdrawalService } from "../../services/withdrawalService";
 
 export const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { logout, user } = useAuthStore();
   const navigate = useNavigate();
+
+  const { data: withdrawalSummary } = useQuery({
+    queryKey: ["admin-withdrawal-summary"],
+    queryFn: () => withdrawalService.getAdminWithdrawalSummary(),
+    refetchInterval: 15000, // Refresh every 15s to keep badge up-to-date
+  });
+
+  const pendingWithdrawals = Number(withdrawalSummary?.pending_count || 0);
 
   const handleLogout = () => {
     logout();
@@ -31,6 +42,12 @@ export const Sidebar = () => {
     { label: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard },
     { label: "Data Nasabah", to: "/admin/nasabah", icon: Users },
     { label: "Pencatatan Transaksi", to: "/admin/transaksi", icon: ArrowLeftRight },
+    {
+      label: "Permohonan Penarikan",
+      to: "/admin/permohonan-tarik",
+      icon: HandCoins,
+      badge: pendingWithdrawals > 0 ? pendingWithdrawals : null,
+    },
     {
       group: "Master Data",
       items: [
@@ -142,7 +159,12 @@ export const Sidebar = () => {
                 }
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {item.badge && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-900 leading-none shadow-xs">
+                    {item.badge}
+                  </span>
+                )}
               </NavLink>
             );
           })}

@@ -155,6 +155,37 @@ CREATE TABLE IF NOT EXISTS transaction_items (
 CREATE INDEX IF NOT EXISTS idx_trx_items_trx ON transaction_items(transaction_id);
 CREATE INDEX IF NOT EXISTS idx_trx_items_category ON transaction_items(category_id);
 CREATE INDEX IF NOT EXISTS idx_trx_items_price ON transaction_items(price_id);
+
+CREATE TABLE IF NOT EXISTS withdrawal_requests (
+    id TEXT PRIMARY KEY,
+    request_no TEXT UNIQUE NOT NULL,
+    nasabah_id TEXT NOT NULL,
+    amount INTEGER NOT NULL CHECK(amount > 0),
+    method TEXT NOT NULL DEFAULT 'TUNAI' CHECK(method IN ('TUNAI', 'TRANSFER')),
+    bank_name TEXT,
+    account_number TEXT,
+    account_holder TEXT,
+    notes TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED')),
+    rejection_reason TEXT,
+    transaction_id TEXT,
+    approved_by TEXT,
+    approved_at TEXT,
+    rejected_by TEXT,
+    rejected_at TEXT,
+    cancelled_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (nasabah_id) REFERENCES nasabah(id),
+    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL,
+    FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (rejected_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_wd_nasabah ON withdrawal_requests(nasabah_id);
+CREATE INDEX IF NOT EXISTS idx_wd_status ON withdrawal_requests(status);
+CREATE INDEX IF NOT EXISTS idx_wd_created ON withdrawal_requests(created_at);
+CREATE INDEX IF NOT EXISTS idx_wd_req_no ON withdrawal_requests(request_no);
 `;
 
 export async function runMigrations() {
