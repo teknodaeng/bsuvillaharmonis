@@ -4,8 +4,10 @@ import { AppError } from '../utils/response.js';
 import { nasabahService } from './nasabahService.js';
 import { TransactionService } from './transactionService.js';
 import { formatRupiah } from '../utils/currency.js';
+import { formatToLocalSqlDateTime } from '../utils/formatting.js';
 import {
   WithdrawalRequestCreateInput,
+  WithdrawalApproveInput,
   WithdrawalRejectInput,
 } from '../schemas/withdrawal.schema.js';
 
@@ -127,7 +129,7 @@ export class WithdrawalService {
 
     const requestId = uuidv4();
     const requestNo = await this.generateRequestNo();
-    const nowIso = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const nowLocal = formatToLocalSqlDateTime();
 
     await db.execute({
       sql: `INSERT INTO withdrawal_requests (
@@ -144,8 +146,8 @@ export class WithdrawalService {
         data.method === 'TRANSFER' ? data.account_number?.trim() || null : null,
         data.method === 'TRANSFER' ? data.account_holder?.trim() || null : null,
         data.notes?.trim() || null,
-        nowIso,
-        nowIso,
+        nowLocal,
+        nowLocal,
       ],
     });
 
@@ -174,19 +176,23 @@ export class WithdrawalService {
       );
     }
 
-    const nowIso = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const nowLocal = formatToLocalSqlDateTime();
 
     await db.execute({
       sql: `UPDATE withdrawal_requests
             SET status = 'CANCELLED', cancelled_at = ?, updated_at = ?
             WHERE id = ?`,
-      args: [nowIso, nowIso, requestId],
+      args: [nowLocal, nowLocal, requestId],
     });
 
     return await this.getRequestById(requestId);
   }
 
-  public static async approveRequest(requestId: string, adminUserId: string, notes?: string) {
+  public static async approveRequest(
+    requestId: string,
+    adminUserId: string,
+    data?: WithdrawalApproveInput | string | null
+  ) {
     return await db.transaction(async (tx) => {
       const item = await tx.fetchOne<any>(
         'SELECT * FROM withdrawal_requests WHERE id = ?',
@@ -215,7 +221,11 @@ export class WithdrawalService {
         );
       }
 
-      const txDate = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      const notes = typeof data === 'string' ? data : data?.notes;
+      const txDate = data && typeof data === 'object' && data.transaction_date
+        ? formatToLocalSqlDateTime(data.transaction_date)
+        : formatToLocalSqlDateTime();
+
       const txId = uuidv4();
       const txNo = await TransactionService.generateTransactionNo(tx, txDate);
       const balanceAfter = currentBalance - item.amount;
@@ -249,6 +259,7 @@ export class WithdrawalService {
       });
 
       // Update status permohonan menjadi APPROVED
+      const updatedNow = formatToLocalSqlDateTime();
       await tx.execute({
         sql: `UPDATE withdrawal_requests
               SET status = 'APPROVED',
@@ -257,7 +268,7 @@ export class WithdrawalService {
                   approved_at = ?,
                   updated_at = ?
               WHERE id = ?`,
-        args: [txId, adminUserId, txDate, txDate, requestId],
+        args: [txId, adminUserId, txDate, updatedNow, requestId],
       });
 
       return await this.getRequestById(requestId, tx);
@@ -286,7 +297,7 @@ export class WithdrawalService {
       );
     }
 
-    const nowIso = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const nowLocal = formatToLocalSqlDateTime();
 
     await db.execute({
       sql: `UPDATE withdrawal_requests
@@ -296,7 +307,7 @@ export class WithdrawalService {
                 rejected_at = ?,
                 updated_at = ?
             WHERE id = ?`,
-      args: [data.rejection_reason.trim(), adminUserId, nowIso, nowIso, requestId],
+      args: [data.rejection_reason.trim(), adminUserId, nowLocal, nowLocal, requestId],
     });
 
     return await this.getRequestById(requestId);

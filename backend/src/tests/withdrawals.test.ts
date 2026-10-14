@@ -226,6 +226,7 @@ describe('Withdrawal Requests (Permohonan Penarikan Saldo)', () => {
     expect(approveBody.success).toBe(true);
     expect(approveBody.data.status).toBe('APPROVED');
     expect(approveBody.data.transaction_no).toBeDefined();
+    expect(approveBody.data.approved_at).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 
     // 4. Verify balance is deducted
     const balRes2 = await app.request('/api/v1/me/balance', {

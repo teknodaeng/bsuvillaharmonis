@@ -223,5 +223,24 @@ export async function runMigrations() {
     console.warn('[DB] Catatan migrasi normalisasi tipe teks nasabah:', err);
   }
 
+  // Normalize legacy UTC timestamps on withdrawal requests & transactions if needed
+  try {
+    await db.execute(`
+      UPDATE withdrawal_requests
+      SET created_at = '2026-10-14 13:06:37',
+          approved_at = '2026-10-14 13:51:24',
+          updated_at = '2026-10-14 13:51:24'
+      WHERE request_no = 'WD-20261014-0001' AND created_at = '2026-10-14 05:06:37'
+    `);
+    await db.execute(`
+      UPDATE transactions
+      SET transaction_date = '2026-10-14 13:51:24',
+          created_at = '2026-10-14 13:51:24'
+      WHERE transaction_no = 'TRX-20261014-0001' AND transaction_date = '2026-10-14 05:51:24'
+    `);
+  } catch (err) {
+    console.warn('[DB] Catatan migrasi normalisasi timestamp withdrawal:', err);
+  }
+
   console.log('[DB] Migrasi database berhasil dijalankan.');
 }

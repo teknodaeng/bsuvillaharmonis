@@ -48,7 +48,7 @@ adminWithdrawalsRouter.post('/:id/approve', validateJson(withdrawalApproveSchema
   const user = c.get('user');
   const id = c.req.param('id');
   const body = c.req.valid('json' as any);
-  const result = await WithdrawalService.approveRequest(id, user.id, body.notes || undefined);
+  const result = await WithdrawalService.approveRequest(id, user.id, body);
   return successResponse(
     c,
     result,
