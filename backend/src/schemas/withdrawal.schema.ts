@@ -45,6 +45,7 @@ export const withdrawalRequestCreateSchema = z
 
 export const withdrawalApproveSchema = z.object({
   notes: z.string().trim().max(500).optional().nullable(),
+  transaction_date: z.string().trim().optional().nullable(),
 });
 
 export const withdrawalRejectSchema = z.object({

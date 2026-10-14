@@ -21,6 +21,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import dayjs from "dayjs";
 import { withdrawalService } from "../../services/withdrawalService";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
@@ -57,6 +58,9 @@ export const AdminWithdrawalListPage = () => {
   // Modal States
   const [approveModalItem, setApproveModalItem] = useState(null);
   const [approveNotes, setApproveNotes] = useState("");
+  const [approveDateTime, setApproveDateTime] = useState(() =>
+    dayjs().format("YYYY-MM-DDTHH:mm")
+  );
 
   const [rejectModalItem, setRejectModalItem] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -95,8 +99,11 @@ export const AdminWithdrawalListPage = () => {
 
   // Mutation Approve
   const approveMutation = useMutation({
-    mutationFn: ({ id, notes }) =>
-      withdrawalService.approveWithdrawalRequest(id, { notes: notes.trim() || null }),
+    mutationFn: ({ id, notes, transaction_date }) =>
+      withdrawalService.approveWithdrawalRequest(id, {
+        notes: notes ? notes.trim() || null : null,
+        transaction_date: transaction_date || null,
+      }),
     onSuccess: (data) => {
       addToast({
         type: "success",
@@ -147,6 +154,7 @@ export const AdminWithdrawalListPage = () => {
   const handleOpenApprove = (item) => {
     setApproveModalItem(item);
     setApproveNotes("");
+    setApproveDateTime(dayjs().format("YYYY-MM-DDTHH:mm"));
   };
 
   const handleOpenReject = (item) => {
@@ -172,8 +180,8 @@ export const AdminWithdrawalListPage = () => {
       render: (val, row) => (
         <div>
           <span className="font-mono font-bold text-gray-900 text-xs">{val}</span>
-          <span className="block text-[11px] text-gray-400">
-            {formatDateTime(row.created_at)}
+          <span className="block text-[11px] text-gray-500">
+            Diajukan: {formatDateTime(row.created_at)}
           </span>
         </div>
       ),
@@ -267,6 +275,9 @@ export const AdminWithdrawalListPage = () => {
               <span className="font-semibold text-emerald-700 block">
                 Disetujui: {row.approver_name || "Admin"}
               </span>
+              <span className="text-[11px] text-gray-500 block">
+                Diproses: {formatDateTime(row.approved_at)}
+              </span>
               {row.transaction_no && (
                 <span className="text-[11px] font-mono text-gray-500 block">
                   Trx: {row.transaction_no}
@@ -277,10 +288,15 @@ export const AdminWithdrawalListPage = () => {
         }
         if (row.status === "REJECTED") {
           return (
-            <div className="text-xs text-rose-600 bg-rose-50/70 p-1 rounded max-w-xs border border-rose-100">
-              <span className="font-semibold block text-[10px] text-rose-700">
-                Ditolak: {row.rejector_name || "Admin"}
-              </span>
+            <div className="text-xs text-rose-600 bg-rose-50/70 p-1.5 rounded max-w-xs border border-rose-100">
+              <div className="flex items-center justify-between gap-1 mb-0.5">
+                <span className="font-semibold block text-[10px] text-rose-700">
+                  Ditolak: {row.rejector_name || "Admin"}
+                </span>
+                <span className="text-[10px] text-gray-500">
+                  {formatDateTime(row.rejected_at)}
+                </span>
+              </div>
               <span className="text-[11px] truncate block" title={row.rejection_reason}>
                 "{row.rejection_reason}"
               </span>
@@ -567,6 +583,7 @@ export const AdminWithdrawalListPage = () => {
                 approveMutation.mutate({
                   id: approveModalItem.id,
                   notes: approveNotes,
+                  transaction_date: approveDateTime,
                 })
               }
             >
@@ -637,6 +654,19 @@ export const AdminWithdrawalListPage = () => {
                 <li>Mencatat transaksi resmi jenis <strong>TARIK</strong> pada buku kas bank sampah.</li>
                 <li>Menandai status permohonan menjadi <strong>Disetujui</strong>.</li>
               </ul>
+            </div>
+
+            {/* Tanggal & Waktu Pemrosesan Transaksi */}
+            <div>
+              <Input
+                type="datetime-local"
+                label="Tanggal & Jam Pemrosesan Kas"
+                icon={Calendar}
+                value={approveDateTime}
+                onChange={(e) => setApproveDateTime(e.target.value)}
+                helperText="Waktu pencatatan pemrosesan kas penarikan (otomatis disinkronkan dengan transaksi kas TARIK)."
+                required
+              />
             </div>
 
             {/* Catatan Admin Opsional */}
@@ -862,8 +892,8 @@ export const AdminWithdrawalListPage = () => {
                     </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-gray-50">
-                    <span className="text-gray-500">Waktu Persetujuan:</span>
-                    <span className="text-gray-900">{formatDateTime(detailModalItem.approved_at)}</span>
+                    <span className="text-gray-500">Waktu Pemrosesan:</span>
+                    <span className="text-gray-900 font-medium">{formatDateTime(detailModalItem.approved_at)}</span>
                   </div>
                   {detailModalItem.transaction_no && (
                     <div className="flex justify-between py-1 border-b border-gray-50 items-center">

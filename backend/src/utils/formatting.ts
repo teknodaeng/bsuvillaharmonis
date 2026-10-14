@@ -48,3 +48,46 @@ export function formatDateTime(dt: string | Date | null | undefined): string {
   const minutes = String(d.getMinutes()).padStart(2, '0');
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
+
+export function formatToLocalSqlDateTime(dt?: Date | string | null): string {
+  if (!dt) {
+    const now = new Date();
+    const Y = now.getFullYear();
+    const M = String(now.getMonth() + 1).padStart(2, '0');
+    const D = String(now.getDate()).padStart(2, '0');
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+  }
+
+  if (typeof dt === 'string') {
+    const trimmed = dt.trim();
+    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}))?/);
+    if (match) {
+      const datePart = match[1];
+      const timePart = match[2];
+      const secPart = match[3] || '00';
+      return `${datePart} ${timePart}:${secPart}`;
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      const Y = parsed.getFullYear();
+      const M = String(parsed.getMonth() + 1).padStart(2, '0');
+      const D = String(parsed.getDate()).padStart(2, '0');
+      const h = String(parsed.getHours()).padStart(2, '0');
+      const m = String(parsed.getMinutes()).padStart(2, '0');
+      const s = String(parsed.getSeconds()).padStart(2, '0');
+      return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+    }
+    return trimmed;
+  }
+
+  const Y = dt.getFullYear();
+  const M = String(dt.getMonth() + 1).padStart(2, '0');
+  const D = String(dt.getDate()).padStart(2, '0');
+  const h = String(dt.getHours()).padStart(2, '0');
+  const m = String(dt.getMinutes()).padStart(2, '0');
+  const s = String(dt.getSeconds()).padStart(2, '0');
+  return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+}

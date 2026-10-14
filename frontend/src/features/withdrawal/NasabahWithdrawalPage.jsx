@@ -218,9 +218,19 @@ export const NasabahWithdrawalPage = () => {
       render: (val, row) => (
         <div>
           <span className="font-mono font-bold text-gray-900 text-xs">{val}</span>
-          <span className="block text-[11px] text-gray-400">
-            {formatDateTime(row.created_at)}
+          <span className="block text-[11px] text-gray-500">
+            Diajukan: {formatDateTime(row.created_at)}
           </span>
+          {row.status === "APPROVED" && row.approved_at && (
+            <span className="block text-[11px] text-emerald-600 font-medium">
+              Diproses: {formatDateTime(row.approved_at)}
+            </span>
+          )}
+          {row.status === "REJECTED" && row.rejected_at && (
+            <span className="block text-[11px] text-rose-600 font-medium">
+              Ditolak: {formatDateTime(row.rejected_at)}
+            </span>
+          )}
         </div>
       ),
     },
@@ -867,6 +877,22 @@ export const NasabahWithdrawalPage = () => {
                   {formatDateTime(detailModalItem.created_at)}
                 </span>
               </div>
+              {detailModalItem.approved_at && (
+                <div className="flex justify-between py-1 border-b border-gray-50">
+                  <span className="text-gray-500">Waktu Pemrosesan:</span>
+                  <span className="font-semibold text-emerald-700">
+                    {formatDateTime(detailModalItem.approved_at)}
+                  </span>
+                </div>
+              )}
+              {detailModalItem.rejected_at && (
+                <div className="flex justify-between py-1 border-b border-gray-50">
+                  <span className="text-gray-500">Waktu Ditolak:</span>
+                  <span className="font-semibold text-rose-700">
+                    {formatDateTime(detailModalItem.rejected_at)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between py-1 border-b border-gray-50">
                 <span className="text-gray-500">Metode Penarikan:</span>
                 <span className="font-semibold text-gray-900">
